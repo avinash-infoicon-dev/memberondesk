@@ -14,7 +14,7 @@
         <section class="guest-form">
             <div class="auth-card">
                 <h2>Sign in</h2>
-                <p class="muted">Use your platform or business owner account.</p>
+                <p class="muted">Use your platform or business owner account. </p>
                 <form method="POST" action="{{ route('login') }}" class="form" style="margin-top:18px">
                     @csrf
                     <label>Email
