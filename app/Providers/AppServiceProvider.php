@@ -21,6 +21,7 @@ use App\Policies\SubscriptionPolicy;
 use App\Support\TenantContext;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
@@ -34,6 +35,8 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        JsonResource::withoutWrapping();
+
         Gate::policy(Business::class, BusinessPolicy::class);
         Gate::policy(Member::class, MemberPolicy::class);
         Gate::policy(MembershipPlan::class, MembershipPlanPolicy::class);

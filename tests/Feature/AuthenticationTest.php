@@ -34,6 +34,10 @@ class AuthenticationTest extends TestCase
             'email' => $user->email,
             'password' => 'password',
             'device_name' => 'phpunit',
-        ])->assertOk()->assertJsonStructure(['token', 'user' => ['id', 'role']]);
+        ])->assertOk()->assertJsonStructure([
+            'success',
+            'message',
+            'data' => ['token', 'user' => ['id', 'role']],
+        ]);
     }
 }

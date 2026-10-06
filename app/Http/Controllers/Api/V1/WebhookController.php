@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Responses\ApiResponse;
 use App\Services\PaymentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -29,7 +30,7 @@ class WebhookController extends Controller
 
         $event = $request->input('event');
         if ($event !== 'payment.captured') {
-            return response()->json(['status' => 'ignored']);
+            return ApiResponse::success(['status' => 'ignored'], 'Webhook ignored');
         }
 
         $entity = $request->input('payload.payment.entity', []);
@@ -49,9 +50,9 @@ class WebhookController extends Controller
             $entity,
         );
 
-        return response()->json([
+        return ApiResponse::success([
             'status' => 'ok',
             'payment_id' => $payment->id,
-        ]);
+        ], 'Payment verified successfully');
     }
 }

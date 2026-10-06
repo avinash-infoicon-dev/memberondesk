@@ -4,17 +4,18 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Api\V1\AttendanceResource;
+use App\Http\Responses\ApiResponse;
 use App\Models\Attendance;
 use App\Models\Member;
 use App\Services\AttendanceService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class AttendanceController extends Controller
 {
     public function __construct(private readonly AttendanceService $attendance) {}
 
-    public function index(Request $request): AnonymousResourceCollection
+    public function index(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Attendance::class);
 
@@ -24,10 +25,10 @@ class AttendanceController extends Controller
             ->latest('check_in_at')
             ->paginate(30);
 
-        return AttendanceResource::collection($records);
+        return ApiResponse::success(AttendanceResource::collection($records), 'Data fetched successfully');
     }
 
-    public function store(Request $request): AttendanceResource
+    public function store(Request $request): JsonResponse
     {
         $this->authorize('create', Attendance::class);
 
@@ -40,6 +41,10 @@ class AttendanceController extends Controller
             ? $this->attendance->scan($data['token'], $request->user())
             : $this->attendance->checkIn(Member::query()->findOrFail($data['member_id']), scanner: $request->user());
 
-        return new AttendanceResource($attendance->load('member'));
+        return ApiResponse::success(
+            new AttendanceResource($attendance->load('member')),
+            'Attendance recorded successfully',
+            201
+        );
     }
 }

@@ -6,10 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Business\StoreMemberRequest;
 use App\Http\Requests\Business\UpdateMemberRequest;
 use App\Http\Resources\Api\V1\MemberResource;
+use App\Http\Responses\ApiResponse;
 use App\Models\Member;
 use App\Services\MemberService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class MemberController extends Controller
 {
@@ -18,7 +19,7 @@ class MemberController extends Controller
         $this->authorizeResource(Member::class, 'member');
     }
 
-    public function index(Request $request): AnonymousResourceCollection
+    public function index(Request $request): JsonResponse
     {
         $members = Member::query()
             ->with(['activeQrCode', 'activeSubscription'])
@@ -32,21 +33,29 @@ class MemberController extends Controller
             ->latest()
             ->paginate(20);
 
-        return MemberResource::collection($members);
+        return ApiResponse::success(MemberResource::collection($members), 'Data fetched successfully');
     }
 
-    public function store(StoreMemberRequest $request): MemberResource
+    public function store(StoreMemberRequest $request): JsonResponse
     {
-        return new MemberResource($this->members->create($request->validated())->load('activeQrCode'));
+        $member = $this->members->create($request->validated())->load('activeQrCode');
+
+        return ApiResponse::success(new MemberResource($member), 'Member created successfully', 201);
     }
 
-    public function show(Member $member): MemberResource
+    public function show(Member $member): JsonResponse
     {
-        return new MemberResource($member->load(['activeQrCode', 'activeSubscription.plan']));
+        return ApiResponse::success(
+            new MemberResource($member->load(['activeQrCode', 'activeSubscription.plan'])),
+            'Data fetched successfully'
+        );
     }
 
-    public function update(UpdateMemberRequest $request, Member $member): MemberResource
+    public function update(UpdateMemberRequest $request, Member $member): JsonResponse
     {
-        return new MemberResource($this->members->update($member, $request->validated()));
+        return ApiResponse::success(
+            new MemberResource($this->members->update($member, $request->validated())),
+            'Member updated successfully'
+        );
     }
 }

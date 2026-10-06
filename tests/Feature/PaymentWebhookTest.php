@@ -72,7 +72,7 @@ class PaymentWebhookTest extends TestCase
         $this->call('POST', '/api/v1/webhooks/razorpay', [], [], [], [
             'CONTENT_TYPE' => 'application/json',
             'HTTP_X_RAZORPAY_SIGNATURE' => $signature,
-        ], $raw)->assertOk()->assertJsonPath('status', 'ok');
+        ], $raw)->assertOk()->assertJsonPath('data.status', 'ok');
 
         $this->assertSame(PaymentRequestStatus::Paid, $request->fresh()->status);
         $this->assertDatabaseCount('payments', 1);

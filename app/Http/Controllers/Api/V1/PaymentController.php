@@ -6,26 +6,27 @@ use App\Enums\PaymentMethod;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Business\StorePaymentRequest;
 use App\Http\Resources\Api\V1\PaymentResource;
+use App\Http\Responses\ApiResponse;
 use App\Models\Member;
 use App\Models\Payment;
 use App\Models\Subscription;
 use App\Services\PaymentService;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\JsonResponse;
 
 class PaymentController extends Controller
 {
     public function __construct(private readonly PaymentService $payments) {}
 
-    public function index(): AnonymousResourceCollection
+    public function index(): JsonResponse
     {
         $this->authorize('viewAny', Payment::class);
 
-        return PaymentResource::collection(
-            Payment::query()->with('member')->latest()->paginate(20)
-        );
+        $payments = Payment::query()->with('member')->latest()->paginate(20);
+
+        return ApiResponse::success(PaymentResource::collection($payments), 'Data fetched successfully');
     }
 
-    public function store(StorePaymentRequest $request): PaymentResource
+    public function store(StorePaymentRequest $request): JsonResponse
     {
         $member = Member::query()->findOrFail($request->integer('member_id'));
         $subscription = $request->filled('subscription_id')
@@ -42,6 +43,10 @@ class PaymentController extends Controller
             $request->input('reference'),
         );
 
-        return new PaymentResource($payment->load('member'));
+        return ApiResponse::success(
+            new PaymentResource($payment->load('member')),
+            'Payment recorded successfully',
+            201
+        );
     }
 }

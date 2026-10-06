@@ -14,10 +14,12 @@ class EnsureBusinessActive
         $business = $request->user()?->business;
 
         if (! $business || $business->status !== BusinessStatus::Active) {
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'message' => 'This business is not active. Contact the platform administrator.',
-                ], 403);
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return \App\Http\Responses\ApiResponse::error(
+                    'This business is not active. Contact the platform administrator.',
+                    null,
+                    403
+                );
             }
 
             if ($request->isMethod('GET')) {

@@ -5,10 +5,19 @@ use App\Http\Middleware\EnsureBusinessOwner;
 use App\Http\Middleware\EnsureSuperAdmin;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\SetTenantContext;
+use App\Http\Responses\ApiResponse;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Auth\AuthenticationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 
 $app = Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -36,6 +45,40 @@ $app = Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(function (Request $request, \Throwable $e) {
             return $request->is('api/*') || $request->expectsJson();
+        });
+
+        $exceptions->render(function (\Throwable $e, Request $request) {
+            if (! $request->is('api/*')) {
+                return null;
+            }
+
+            if ($e instanceof ValidationException) {
+                return ApiResponse::error($e->getMessage(), $e->errors(), $e->status);
+            }
+
+            if ($e instanceof AuthenticationException) {
+                return ApiResponse::error('Unauthenticated.', null, 401);
+            }
+
+            if ($e instanceof AuthorizationException || $e instanceof AccessDeniedHttpException) {
+                return ApiResponse::error($e->getMessage() ?: 'This action is unauthorized.', null, 403);
+            }
+
+            if ($e instanceof ModelNotFoundException || $e instanceof NotFoundHttpException) {
+                return ApiResponse::error('Resource not found.', null, 404);
+            }
+
+            if ($e instanceof UnauthorizedHttpException) {
+                return ApiResponse::error($e->getMessage() ?: 'Unauthorized.', null, 401);
+            }
+
+            $status = $e instanceof HttpExceptionInterface ? $e->getStatusCode() : 500;
+
+            return ApiResponse::error(
+                config('app.debug') ? ($e->getMessage() ?: 'Something went wrong.') : 'Something went wrong.',
+                null,
+                $status
+            );
         });
     })->create();
 

@@ -14,7 +14,7 @@ class EnsureUserIsActive
 
         if ($user && ! $user->is_active) {
             if ($request->expectsJson() || $request->is('api/*')) {
-                return response()->json(['message' => 'Your account is disabled.'], 403);
+                return \App\Http\Responses\ApiResponse::error('Your account is disabled.', null, 403);
             }
 
             auth()->logout();

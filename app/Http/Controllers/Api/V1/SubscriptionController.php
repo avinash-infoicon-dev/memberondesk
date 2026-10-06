@@ -5,11 +5,12 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Business\StoreSubscriptionRequest;
 use App\Http\Resources\Api\V1\SubscriptionResource;
+use App\Http\Responses\ApiResponse;
 use App\Models\Member;
 use App\Models\Subscription;
 use App\Services\PaymentService;
 use App\Services\SubscriptionService;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\JsonResponse;
 
 class SubscriptionController extends Controller
 {
@@ -18,16 +19,16 @@ class SubscriptionController extends Controller
         private readonly PaymentService $payments,
     ) {}
 
-    public function index(): AnonymousResourceCollection
+    public function index(): JsonResponse
     {
         $this->authorize('viewAny', Subscription::class);
 
-        return SubscriptionResource::collection(
-            Subscription::query()->with(['member', 'plan'])->latest()->paginate(20)
-        );
+        $subscriptions = Subscription::query()->with(['member', 'plan'])->latest()->paginate(20);
+
+        return ApiResponse::success(SubscriptionResource::collection($subscriptions), 'Data fetched successfully');
     }
 
-    public function store(StoreSubscriptionRequest $request): SubscriptionResource
+    public function store(StoreSubscriptionRequest $request): JsonResponse
     {
         $member = Member::query()->findOrFail($request->integer('member_id'));
         $subscription = $this->subscriptions->assign(
@@ -41,13 +42,20 @@ class SubscriptionController extends Controller
             $subscription->refresh();
         }
 
-        return new SubscriptionResource($subscription->load(['member', 'plan']));
+        return ApiResponse::success(
+            new SubscriptionResource($subscription->load(['member', 'plan'])),
+            'Subscription created successfully',
+            201
+        );
     }
 
-    public function show(Subscription $subscription): SubscriptionResource
+    public function show(Subscription $subscription): JsonResponse
     {
         $this->authorize('view', $subscription);
 
-        return new SubscriptionResource($subscription->load(['member', 'plan']));
+        return ApiResponse::success(
+            new SubscriptionResource($subscription->load(['member', 'plan'])),
+            'Data fetched successfully'
+        );
     }
 }

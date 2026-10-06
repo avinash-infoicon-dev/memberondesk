@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Responses\ApiResponse;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -37,7 +38,7 @@ class AuthController extends Controller
 
         $token = $user->createToken($data['device_name'] ?? 'android')->plainTextToken;
 
-        return response()->json([
+        return ApiResponse::success([
             'token' => $token,
             'token_type' => 'Bearer',
             'user' => [
@@ -47,23 +48,23 @@ class AuthController extends Controller
                 'role' => $user->role,
                 'business_id' => $user->business_id,
             ],
-        ]);
+        ], 'Logged in successfully');
     }
 
     public function logout(Request $request): JsonResponse
     {
         $request->user()?->currentAccessToken()?->delete();
 
-        return response()->json(['message' => 'Logged out']);
+        return ApiResponse::success(null, 'Logged out successfully');
     }
 
     public function me(Request $request): JsonResponse
     {
         $user = $request->user()->load('business');
 
-        return response()->json([
+        return ApiResponse::success([
             'user' => $user->only(['id', 'name', 'email', 'phone', 'role', 'business_id']),
             'business' => $user->business?->only(['id', 'name', 'type', 'status', 'upi_id']),
-        ]);
+        ], 'Data fetched successfully');
     }
 }
