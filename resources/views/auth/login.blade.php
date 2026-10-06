@@ -3,8 +3,8 @@
         <section class="guest-art">
             <div>
                 <div class="brand">
-                    <div class="brand-mark">MOD </div>
-                    <strong>Members On Desk</strong>
+                    <div class="brand-mark">MOD</div>
+                    <strong>Member On Desk</strong>
                 </div>
                 <h1>Run gyms and libraries from one desk.</h1>
                 <p>Register members, scan QR attendance, collect cash or UPI, and keep every business isolated in a multi-tenant SaaS.</p>
