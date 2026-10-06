@@ -3,7 +3,7 @@
         <section class="guest-art">
             <div>
                 <div class="brand">
-                    <div class="brand-mark">MOD</div>
+                    <div class="brand-mark">MOD </div>
                     <strong>Members On Desk</strong>
                 </div>
                 <h1>Run gyms and libraries from one desk.</h1>
