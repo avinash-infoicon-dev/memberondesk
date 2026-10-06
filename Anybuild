@@ -1,5 +1,5 @@
-# Wasmer injects `composer install` as the first install step, before COPY.
-# Stage Composer files into /app first so that command can see them.
+# Wasmer Build Config runs install before COPY. Stage lockfiles into /app
+# so `npm install` / `composer install` can see them.
 
 load("//anybuild/tools:laravel.bzl", "laravel_build", "laravel_config", "laravel_serve")
 
@@ -8,6 +8,7 @@ config = laravel_config(
     node_package_manager = "npm",
     node_version = "24",
     npm_version = "11",
+    node_build_command = "npm run build",
     php_framework = "laravel",
     composer_enable = True,
     composer_build_script = "post-update-cmd",
@@ -25,5 +26,6 @@ laravel_serve(
         workdir("/app"),
         copy("composer.json"),
         copy("composer.lock") if file_exists("composer.lock") else None,
+        copy("package.json") if file_exists("package.json") else None,
     ],
 )
