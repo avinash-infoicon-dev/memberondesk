@@ -35,6 +35,13 @@ $app = Application::configure(basePath: dirname(__DIR__))
             'business.active' => EnsureBusinessActive::class,
         ]);
 
+        // Tenant context must be set before route-model binding, or scoped
+        // models (members, plans, etc.) resolve as missing and return 404.
+        $middleware->prependToPriorityList(
+            before: \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            prepend: SetTenantContext::class,
+        );
+
         $middleware->redirectGuestsTo(fn () => route('login'));
         $middleware->redirectUsersTo(function (Request $request) {
             return $request->user()?->isSuperAdmin()

@@ -16,4 +16,9 @@ enum BusinessType: string
             self::Both => 'Gym & Library',
         };
     }
+
+    public function supports(self $loginType): bool
+    {
+        return $this === $loginType || $this === self::Both;
+    }
 }

@@ -19,7 +19,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/auth/me', [AuthController::class, 'me']);
 
         Route::middleware('business_owner')->group(function () {
-            Route::apiResource('members', MemberController::class)->except('destroy');
+            Route::apiResource('members', MemberController::class);
             Route::apiResource('plans', PlanController::class)->only(['index', 'store', 'show']);
             Route::apiResource('subscriptions', SubscriptionController::class)->only(['index', 'store', 'show']);
             Route::get('attendance', [AttendanceController::class, 'index']);
