@@ -37,6 +37,13 @@ class MemberService
         return $member->fresh();
     }
 
+    public function delete(Member $member): void
+    {
+        $old = $member->toArray();
+        $member->delete();
+        $this->audit->log('member.deleted', $member, $old);
+    }
+
     public function nextMemberCode(): string
     {
         $prefix = 'M'.now()->format('y');

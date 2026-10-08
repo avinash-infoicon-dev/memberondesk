@@ -27,7 +27,7 @@ class UpdateMemberRequest extends FormRequest
             'address' => ['nullable', 'string', 'max:255'],
             'emergency_contact_name' => ['nullable', 'string', 'max:255'],
             'emergency_contact_phone' => ['nullable', 'string', 'max:20'],
-            'status' => ['required', Rule::enum(MemberStatus::class)],
+            'status' => ['sometimes', Rule::enum(MemberStatus::class)],
             'joined_at' => ['nullable', 'date'],
             'notes' => ['nullable', 'string'],
         ];

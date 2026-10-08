@@ -36,4 +36,13 @@ class PlanController extends Controller
 
         return ApiResponse::success(new MembershipPlanResource($plan), 'Data fetched successfully');
     }
+
+    public function destroy(MembershipPlan $plan): JsonResponse
+    {
+        $this->authorize('delete', $plan);
+
+        $plan->delete();
+
+        return ApiResponse::success(null, 'Plan deleted successfully');
+    }
 }

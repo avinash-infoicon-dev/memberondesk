@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Enums\MembershipDisplayStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Business\StoreMemberRequest;
 use App\Http\Requests\Business\UpdateMemberRequest;
@@ -11,6 +12,7 @@ use App\Models\Member;
 use App\Services\MemberService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class MemberController extends Controller
 {
@@ -21,6 +23,11 @@ class MemberController extends Controller
 
     public function index(Request $request): JsonResponse
     {
+        $request->validate([
+            'q' => ['nullable', 'string', 'max:255'],
+            'status' => ['nullable', 'string', Rule::enum(MembershipDisplayStatus::class)],
+        ]);
+
         $members = Member::query()
             ->with(['activeQrCode', 'activeSubscription'])
             ->when($request->string('q')->toString(), function ($query, $q) {
@@ -30,6 +37,7 @@ class MemberController extends Controller
                         ->orWhere('member_code', 'like', "%{$q}%");
                 });
             })
+            ->when($request->filled('status'), fn ($query) => $query->displayStatus($request->string('status')->toString()))
             ->latest()
             ->paginate(20);
 
@@ -54,8 +62,15 @@ class MemberController extends Controller
     public function update(UpdateMemberRequest $request, Member $member): JsonResponse
     {
         return ApiResponse::success(
-            new MemberResource($this->members->update($member, $request->validated())),
+            new MemberResource($this->members->update($member, $request->validated())->load(['activeQrCode', 'activeSubscription'])),
             'Member updated successfully'
         );
+    }
+
+    public function destroy(Member $member): JsonResponse
+    {
+        $this->members->delete($member);
+
+        return ApiResponse::success(null, 'Member deleted successfully');
     }
 }

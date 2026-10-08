@@ -11,6 +11,7 @@ use App\Models\Subscription;
 use App\Services\PaymentService;
 use App\Services\SubscriptionService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class SubscriptionController extends Controller
 {
@@ -19,11 +20,15 @@ class SubscriptionController extends Controller
         private readonly PaymentService $payments,
     ) {}
 
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Subscription::class);
 
-        $subscriptions = Subscription::query()->with(['member', 'plan'])->latest()->paginate(20);
+        $subscriptions = Subscription::query()
+            ->with(['member', 'plan'])
+            ->when($request->integer('member_id'), fn ($query, $memberId) => $query->where('member_id', $memberId))
+            ->latest()
+            ->paginate(20);
 
         return ApiResponse::success(SubscriptionResource::collection($subscriptions), 'Data fetched successfully');
     }
