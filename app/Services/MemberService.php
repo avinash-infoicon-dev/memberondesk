@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\MemberStatus;
 use App\Models\Member;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 
 class MemberService
@@ -15,16 +16,27 @@ class MemberService
 
     public function create(array $data): Member
     {
+        $data['status'] ??= MemberStatus::Active->value;
+        $data['joined_at'] ??= now()->toDateString();
+        unset($data['member_code']);
+
         return DB::transaction(function () use ($data) {
-            $data['member_code'] ??= $this->nextMemberCode();
-            $data['status'] ??= MemberStatus::Active->value;
-            $data['joined_at'] ??= now()->toDateString();
+            $attempts = 0;
 
-            $member = Member::query()->create($data);
-            $this->qrCodes->generateFor($member);
-            $this->audit->log('member.created', $member, new: $member->toArray());
+            while (true) {
+                try {
+                    $data['member_code'] = $this->nextMemberCode();
+                    $member = Member::query()->create($data);
+                    $this->qrCodes->generateFor($member);
+                    $this->audit->log('member.created', $member, new: $member->toArray());
 
-            return $member->fresh(['activeQrCode']);
+                    return $member->fresh(['activeQrCode']);
+                } catch (QueryException $e) {
+                    if (++$attempts >= 8 || ! $this->isMemberCodeDuplicate($e)) {
+                        throw $e;
+                    }
+                }
+            }
         });
     }
 
@@ -47,17 +59,30 @@ class MemberService
     public function nextMemberCode(): string
     {
         $prefix = 'M'.now()->format('y');
-        $latest = Member::query()
+
+        $maxSequence = Member::query()
             ->withTrashed()
             ->where('member_code', 'like', $prefix.'%')
-            ->orderByDesc('id')
-            ->value('member_code');
+            ->lockForUpdate()
+            ->pluck('member_code')
+            ->reduce(function (int $max, string $code) use ($prefix) {
+                $suffix = substr($code, strlen($prefix));
 
-        $sequence = 1;
-        if ($latest && preg_match('/(\d+)$/', $latest, $matches)) {
-            $sequence = ((int) $matches[1]) + 1;
-        }
+                if ($suffix === '' || ! ctype_digit($suffix) || strlen($suffix) > 5) {
+                    return $max;
+                }
 
-        return $prefix.str_pad((string) $sequence, 4, '0', STR_PAD_LEFT);
+                return max($max, (int) $suffix);
+            }, 0);
+
+        $next = $maxSequence + 1;
+
+        return $prefix.str_pad((string) $next, max(4, strlen((string) $next)), '0', STR_PAD_LEFT);
+    }
+
+    private function isMemberCodeDuplicate(QueryException $e): bool
+    {
+        return $e->getCode() === '23000'
+            && str_contains($e->getMessage(), 'members_business_id_member_code_unique');
     }
 }
