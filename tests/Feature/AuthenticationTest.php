@@ -29,42 +29,18 @@ class AuthenticationTest extends TestCase
         ])->assertRedirect(route('super-admin.dashboard'));
     }
 
-    public function test_api_login_requires_type(): void
-    {
-        $this->postJson('/api/v1/auth/login', [
-            'email' => 'owner@example.com',
-            'password' => 'password',
-        ])->assertUnprocessable()->assertJsonPath('success', false);
-    }
-
-    public function test_api_login_issues_a_sanctum_token_for_matching_type(): void
+    public function test_api_login_does_not_require_type(): void
     {
         $user = $this->ownerWithBusiness(BusinessType::Gym);
 
         $this->postJson('/api/v1/auth/login', [
             'email' => $user->email,
             'password' => 'password',
-            'type' => 'gym',
-            'device_name' => 'phpunit',
-        ])->assertOk()->assertJsonPath('success', true)->assertJsonPath('data.type', 'gym')->assertJsonPath('data.user.type', 'gym')->assertJsonPath('data.business.type', 'gym')->assertJsonStructure([
-            'success',
-            'message',
-            'data' => ['token', 'type', 'user' => ['id', 'role', 'type'], 'business' => ['id', 'type']],
-        ]);
+            'device_name' => 'android',
+        ])->assertOk()->assertJsonPath('success', true)->assertJsonPath('data.type', 'gym')->assertJsonPath('data.user.type', 'gym')->assertJsonPath('data.business.type', 'gym');
     }
 
-    public function test_gym_owner_cannot_login_as_library(): void
-    {
-        $user = $this->ownerWithBusiness(BusinessType::Gym);
-
-        $this->postJson('/api/v1/auth/login', [
-            'email' => $user->email,
-            'password' => 'password',
-            'type' => 'library',
-        ])->assertUnprocessable()->assertJsonPath('success', false)->assertJsonPath('data.type.0', 'This account does not belong to a library.');
-    }
-
-    public function test_library_owner_cannot_login_as_gym(): void
+    public function test_api_login_returns_business_type_even_if_type_is_sent(): void
     {
         $user = $this->ownerWithBusiness(BusinessType::Library);
 
@@ -72,24 +48,18 @@ class AuthenticationTest extends TestCase
             'email' => $user->email,
             'password' => 'password',
             'type' => 'gym',
-        ])->assertUnprocessable()->assertJsonPath('success', false);
+            'device_name' => 'phpunit',
+        ])->assertOk()->assertJsonPath('data.type', 'library')->assertJsonPath('data.business.type', 'library');
     }
 
-    public function test_combined_business_can_login_as_gym_or_library(): void
+    public function test_tutor_owner_login_returns_tutor_type(): void
     {
-        $user = $this->ownerWithBusiness(BusinessType::Both);
+        $user = $this->ownerWithBusiness(BusinessType::Tutor);
 
         $this->postJson('/api/v1/auth/login', [
             'email' => $user->email,
             'password' => 'password',
-            'type' => 'gym',
-        ])->assertOk()->assertJsonPath('data.type', 'gym');
-
-        $this->postJson('/api/v1/auth/login', [
-            'email' => $user->email,
-            'password' => 'password',
-            'type' => 'library',
-        ])->assertOk()->assertJsonPath('data.type', 'library');
+        ])->assertOk()->assertJsonPath('data.type', 'tutor');
     }
 
     private function ownerWithBusiness(BusinessType $type): User

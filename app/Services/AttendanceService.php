@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\AttendanceSource;
+use App\Enums\SubscriptionStatus;
 use App\Models\Attendance;
 use App\Models\Member;
 use App\Models\User;
@@ -45,13 +46,11 @@ class AttendanceService
         $subscription = $member->subscriptions()
             ->active()
             ->latest('id')
-            ->first();
-
-        if (! $subscription) {
-            throw ValidationException::withMessages([
-                'member' => 'No active membership found. Attendance was not recorded.',
-            ]);
-        }
+            ->first()
+            ?? $member->subscriptions()
+                ->where('status', '!=', SubscriptionStatus::Cancelled)
+                ->latest('id')
+                ->first();
 
         $open = Attendance::query()
             ->where('member_id', $member->id)
@@ -71,7 +70,7 @@ class AttendanceService
             $attendance = Attendance::query()->create([
                 'business_id' => $member->business_id,
                 'member_id' => $member->id,
-                'subscription_id' => $subscription->id,
+                'subscription_id' => $subscription?->id,
                 'scanned_by' => $scanner?->id,
                 'check_in_at' => now(),
                 'source' => $source,

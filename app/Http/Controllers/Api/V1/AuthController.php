@@ -2,14 +2,12 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Enums\BusinessType;
 use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
@@ -19,11 +17,9 @@ class AuthController extends Controller
         $data = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required', 'string'],
-            'type' => ['required', 'string', Rule::in([BusinessType::Gym->value, BusinessType::Library->value])],
+            'type' => ['sometimes', 'nullable', 'string'],
             'device_name' => ['nullable', 'string', 'max:255'],
         ]);
-
-        $loginType = BusinessType::from($data['type']);
 
         $user = User::query()->where('email', $data['email'])->first();
 
@@ -41,35 +37,40 @@ class AuthController extends Controller
 
         $user->load('business');
 
-        if (! $user->business?->type?->supports($loginType)) {
+        if (! $user->isSuperAdmin() && ! $user->business) {
             throw ValidationException::withMessages([
-                'type' => ['This account does not belong to a '.$loginType->value.'.'],
+                'email' => ['This account is not linked to a business.'],
             ]);
         }
 
+        $businessType = $user->business?->type?->value;
+
         $user->forceFill(['last_login_at' => now()])->save();
 
-        $token = $user->createToken($data['device_name'] ?? 'android', [$loginType->value])->plainTextToken;
+        $token = $user->createToken(
+            $data['device_name'] ?? 'android',
+            array_filter([$businessType])
+        )->plainTextToken;
 
         return ApiResponse::success([
             'token' => $token,
             'token_type' => 'Bearer',
-            'type' => $loginType->value,
+            'type' => $businessType,
             'user' => [
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
                 'role' => $user->role,
                 'business_id' => $user->business_id,
-                'type' => $loginType->value,
+                'type' => $businessType,
             ],
-            'business' => [
+            'business' => $user->business ? [
                 'id' => $user->business->id,
                 'name' => $user->business->name,
                 'type' => $user->business->type,
                 'status' => $user->business->status,
                 'upi_id' => $user->business->upi_id,
-            ],
+            ] : null,
         ], 'Logged in successfully');
     }
 
@@ -83,13 +84,13 @@ class AuthController extends Controller
     public function me(Request $request): JsonResponse
     {
         $user = $request->user()->load('business');
-        $loginType = collect($request->user()->currentAccessToken()?->abilities ?? [])
-            ->first(fn (string $ability) => in_array($ability, [BusinessType::Gym->value, BusinessType::Library->value], true));
+        $businessType = $user->business?->type?->value
+            ?? collect($request->user()->currentAccessToken()?->abilities ?? [])->first();
 
         return ApiResponse::success([
             'user' => array_merge(
                 $user->only(['id', 'name', 'email', 'phone', 'role', 'business_id']),
-                ['type' => $loginType ?? $user->business?->type],
+                ['type' => $businessType],
             ),
             'business' => $user->business?->only(['id', 'name', 'type', 'status', 'upi_id']),
         ], 'Data fetched successfully');

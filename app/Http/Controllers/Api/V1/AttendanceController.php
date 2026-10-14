@@ -41,9 +41,14 @@ class AttendanceController extends Controller
             ? $this->attendance->scan($data['token'], $request->user())
             : $this->attendance->checkIn(Member::query()->findOrFail($data['member_id']), scanner: $request->user());
 
+        $attendance->load(['member.activeSubscription', 'subscription']);
+        $hasActiveMembership = (bool) $attendance->member?->activeSubscription;
+
         return ApiResponse::success(
-            new AttendanceResource($attendance->load('member')),
-            'Attendance recorded successfully',
+            new AttendanceResource($attendance),
+            $hasActiveMembership
+                ? 'Attendance recorded successfully'
+                : 'Attendance recorded. No active membership found.',
             201
         );
     }

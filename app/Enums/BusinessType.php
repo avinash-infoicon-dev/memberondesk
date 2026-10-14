@@ -6,6 +6,7 @@ enum BusinessType: string
 {
     case Gym = 'gym';
     case Library = 'library';
+    case Tutor = 'tutor';
     case Both = 'both';
 
     public function label(): string
@@ -13,6 +14,7 @@ enum BusinessType: string
         return match ($this) {
             self::Gym => 'Gym',
             self::Library => 'Library',
+            self::Tutor => 'Tutor',
             self::Both => 'Gym & Library',
         };
     }

@@ -14,6 +14,7 @@ class AttendanceResource extends JsonResource
             'check_in_at' => $this->check_in_at?->toIso8601String(),
             'check_out_at' => $this->check_out_at?->toIso8601String(),
             'source' => $this->source,
+            'membership_status' => $this->whenLoaded('member', fn () => $this->member?->displayStatus()->value),
             'member' => new MemberResource($this->whenLoaded('member')),
         ];
     }
