@@ -21,8 +21,17 @@ class PaymentController extends Controller
     {
         $this->authorize('viewAny', Payment::class);
 
-        $payments = Payment::query()->with('member')->latest()->paginate(20);
+        //$payments = Payment::query()->with('member')->latest()->paginate(20); 
+ 
 
+        $payments = Payment::query()
+            ->with('member')
+            ->when(request()->filled('member_id'), function ($query) {
+                $query->where('member_id', request()->query('member_id'));
+            })
+            ->latest()
+            ->paginate(20);
+ 
         return ApiResponse::success(PaymentResource::collection($payments), 'Data fetched successfully');
     }
 
