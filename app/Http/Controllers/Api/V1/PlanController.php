@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Business\StoreMembershipPlanRequest;
+use App\Http\Requests\UpdateMembershipPlanRequest;
 use App\Http\Resources\Api\V1\MembershipPlanResource;
 use App\Http\Responses\ApiResponse;
 use App\Models\MembershipPlan;
@@ -44,5 +45,16 @@ class PlanController extends Controller
         $plan->delete();
 
         return ApiResponse::success(null, 'Plan deleted successfully');
+    }
+    public function update(
+    UpdateMembershipPlanRequest $request,
+    MembershipPlan $plan
+    ): JsonResponse {
+        $plan->update($request->validated());
+
+        return ApiResponse::success(
+            new MembershipPlanResource($plan->fresh()),
+            'Plan updated successfully'
+        );
     }
 }

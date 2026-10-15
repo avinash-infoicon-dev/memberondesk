@@ -25,7 +25,7 @@ Route::prefix('v1')->group(function () {
             Route::put('/profile', [ProfileController::class, 'update']);
             Route::patch('/profile', [ProfileController::class, 'update']);
             Route::apiResource('members', MemberController::class);
-            Route::apiResource('plans', PlanController::class)->only(['index', 'store', 'show', 'destroy']);
+            Route::apiResource('plans', PlanController::class)->only(['index', 'store', 'show', 'destroy', 'update']);
             Route::apiResource('subscriptions', SubscriptionController::class)->only(['index', 'store', 'show']);
             Route::get('attendance', [AttendanceController::class, 'index']);
             Route::post('attendance', [AttendanceController::class, 'store']);
