@@ -28,28 +28,53 @@ class AttendanceController extends Controller
         return ApiResponse::success(AttendanceResource::collection($records), 'Data fetched successfully');
     }
 
+     
     public function store(Request $request): JsonResponse
-    {
-        $this->authorize('create', Attendance::class);
+{
+    $this->authorize('create', Attendance::class);
 
-        $data = $request->validate([
-            'token' => ['required_without:member_id', 'string'],
-            'member_id' => ['required_without:token', 'integer'],
-        ]);
+    $data = $request->validate([
+        'token' => ['required_without:member_id', 'string'],
+        'member_id' => ['required_without:token', 'integer'],
+    ]);
 
-        $attendance = isset($data['token'])
-            ? $this->attendance->scan($data['token'], $request->user())
-            : $this->attendance->checkIn(Member::query()->findOrFail($data['member_id']), scanner: $request->user());
+    // Find the member using token or member_id
+    $member = isset($data['token'])
+        ? Member::query()->where('token', $data['token'])->firstOrFail()
+        : Member::query()->findOrFail($data['member_id']);
 
-        $attendance->load(['member.activeSubscription', 'subscription']);
-        $hasActiveMembership = (bool) $attendance->member?->activeSubscription;
+    // Prevent duplicate attendance for the same member on the same date
+    $alreadyCheckedIn = Attendance::query()
+        ->where('member_id', $member->id)
+        ->whereDate('created_at', today())
+        ->exists();
 
+    if ($alreadyCheckedIn) {
         return ApiResponse::success(
-            new AttendanceResource($attendance),
-            $hasActiveMembership
-                ? 'Attendance recorded successfully'
-                : 'Attendance recorded. No active membership found.',
-            201
+            null,
+            'Attendance already recorded for today.',
+            200
         );
     }
+
+    // Record attendance
+    $attendance = isset($data['token'])
+        ? $this->attendance->scan($data['token'], $request->user())
+        : $this->attendance->checkIn(
+            $member,
+            scanner: $request->user()
+        );
+
+    $attendance->load(['member.activeSubscription', 'subscription']);
+
+    $hasActiveMembership = (bool) $attendance->member?->activeSubscription;
+
+    return ApiResponse::success(
+        new AttendanceResource($attendance),
+        $hasActiveMembership
+            ? 'Attendance recorded successfully'
+            : 'Attendance recorded. No active membership found.',
+        201
+    );
+}
 }
