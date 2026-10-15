@@ -12,13 +12,24 @@ use Illuminate\Http\JsonResponse;
 
 class PlanController extends Controller
 {
+    public function __construct()
+    {
+        $this->authorizeResource(MembershipPlan::class, 'plan');
+    }
+
     public function index(): JsonResponse
     {
         $this->authorize('viewAny', MembershipPlan::class);
 
-        $plans = MembershipPlan::query()->where('is_active', true)->orderBy('name')->get();
+        $plans = MembershipPlan::query()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
 
-        return ApiResponse::success(MembershipPlanResource::collection($plans), 'Data fetched successfully');
+        return ApiResponse::success(
+            MembershipPlanResource::collection($plans),
+            'Data fetched successfully'
+        );
     }
 
     public function store(StoreMembershipPlanRequest $request): JsonResponse
@@ -28,27 +39,26 @@ class PlanController extends Controller
             'is_active' => $request->boolean('is_active', true),
         ]);
 
-        return ApiResponse::success(new MembershipPlanResource($plan), 'Plan created successfully', 201);
+        return ApiResponse::success(
+            new MembershipPlanResource($plan),
+            'Plan created successfully',
+            201
+        );
     }
 
     public function show(MembershipPlan $plan): JsonResponse
     {
         $this->authorize('view', $plan);
 
-        return ApiResponse::success(new MembershipPlanResource($plan), 'Data fetched successfully');
+        return ApiResponse::success(
+            new MembershipPlanResource($plan),
+            'Data fetched successfully'
+        );
     }
 
-    public function destroy(MembershipPlan $plan): JsonResponse
-    {
-        $this->authorize('delete', $plan);
-
-        $plan->delete();
-
-        return ApiResponse::success(null, 'Plan deleted successfully');
-    }
     public function update(
-    UpdateMembershipPlanRequest $request,
-    MembershipPlan $plan
+        UpdateMembershipPlanRequest $request,
+        MembershipPlan $plan
     ): JsonResponse {
         $plan->update($request->validated());
 
@@ -57,4 +67,16 @@ class PlanController extends Controller
             'Plan updated successfully'
         );
     }
-}
+
+    public function destroy(MembershipPlan $plan): JsonResponse
+    {
+        $this->authorize('delete', $plan);
+
+        $plan->delete();
+
+        return ApiResponse::success(
+            null,
+            'Plan deleted successfully'
+        );
+    }
+} 
