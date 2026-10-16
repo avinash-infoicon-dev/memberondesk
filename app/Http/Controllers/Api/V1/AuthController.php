@@ -58,6 +58,7 @@ class AuthController extends Controller
             'type' => $businessType,
             'user' => [
                 'id' => $user->id,
+                'profile_image_url' => $user->profile_image_url,
                 'name' => $user->name,
                 'email' => $user->email,
                 'role' => $user->role,
@@ -89,7 +90,7 @@ class AuthController extends Controller
 
         return ApiResponse::success([
             'user' => array_merge(
-                $user->only(['id', 'name', 'email', 'phone', 'role', 'business_id']),
+                $user->only(['id', 'name', 'email', 'phone', 'role', 'business_id', 'profile_image_url']),
                 ['type' => $businessType],
             ),
             'business' => $user->business?->only(['id', 'name', 'type', 'status', 'upi_id']),
