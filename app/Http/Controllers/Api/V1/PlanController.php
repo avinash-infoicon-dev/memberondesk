@@ -61,7 +61,7 @@ class PlanController extends Controller
         MembershipPlan $plan
     ): JsonResponse {
         $plan->update($request->validated());
-
+        
         return ApiResponse::success(
             new MembershipPlanResource($plan->fresh()),
             'Plan updated successfully'
