@@ -22,6 +22,7 @@ Route::prefix('v1')->group(function () {
 
         Route::middleware('business_owner')->group(function () {
             Route::get('dashboard', DashboardController::class);
+            Route::post('/profile', [ProfileController::class, 'update']);
             Route::put('/profile', [ProfileController::class, 'update']);
             Route::patch('/profile', [ProfileController::class, 'update']);
             Route::apiResource('members', MemberController::class);

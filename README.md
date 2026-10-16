@@ -46,6 +46,7 @@ SaaS plans: ₹499 / month and ₹4,999 / year (separate from member collections
 Base URL: `/api/v1`
 
 - `POST /auth/login`
+- `POST /profile` (also accepts PUT/PATCH; use multipart POST for image uploads)
 - `GET /members` `POST /members`
 - `GET /plans`
 - `GET /subscriptions` `POST /subscriptions`
@@ -55,4 +56,12 @@ Base URL: `/api/v1`
 - `POST /webhooks/razorpay` (signature required, never trust the client)
 
 Use `Authorization: Bearer {token}`.
+
+Profile updates accept text fields such as `name`, `email`, `phone`, and
+`business_name`. Send an optional image as `profile_image` using
+`multipart/form-data` (JPG, PNG, or WebP, up to 2 MB), with
+`Accept: application/json`. Let the HTTP client set the multipart boundary.
+Images are stored under `storage/app/public/profile-images/{user_id}`;
+the PHP server account must be able to write there. Run `php artisan storage:link`
+if `public/storage` does not exist, so returned image URLs can be served.
 # memberondesk

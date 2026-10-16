@@ -18,6 +18,38 @@ class ProfileApiTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_owner_can_update_profile_text_with_post(): void
+    {
+        $owner = $this->gymOwner();
+        Sanctum::actingAs($owner);
+
+        $this->postJson('/api/v1/profile', [
+            'name' => 'Updated Owner',
+            'business_name' => 'Updated Gym',
+        ])->assertOk()
+            ->assertJsonPath('data.user.name', 'Updated Owner')
+            ->assertJsonPath('data.business.name', 'Updated Gym');
+
+        $this->assertSame('Updated Owner', $owner->fresh()->name);
+        $this->assertSame('Updated Gym', $owner->fresh()->business->name);
+    }
+
+    public function test_owner_can_save_text_and_image_together_with_post(): void
+    {
+        Storage::fake('public');
+        $owner = $this->gymOwner();
+        Sanctum::actingAs($owner);
+
+        $this->post('/api/v1/profile', [
+            'name' => 'Owner With Image',
+            'profile_image' => UploadedFile::fake()->image('avatar.jpg'),
+        ], ['Accept' => 'application/json'])->assertOk()
+            ->assertJsonPath('data.user.name', 'Owner With Image');
+
+        $this->assertSame('Owner With Image', $owner->fresh()->name);
+        Storage::disk('public')->assertExists($owner->fresh()->profile_image_path);
+    }
+
     public function test_owner_can_upload_and_replace_a_profile_image(): void
     {
         Storage::fake('public');
