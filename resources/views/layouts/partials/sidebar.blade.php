@@ -12,6 +12,7 @@
             <a href="{{ route('super-admin.dashboard') }}" class="{{ request()->routeIs('super-admin.dashboard') ? 'active' : '' }}">Dashboard</a>
             <a href="{{ route('super-admin.businesses.index') }}" class="{{ request()->routeIs('super-admin.businesses.*') ? 'active' : '' }}">Businesses</a>
             <a href="{{ route('super-admin.users.index') }}" class="{{ request()->routeIs('super-admin.users.*') ? 'active' : '' }}">Users</a>
+            <a href="{{ route('super-admin.settings.edit') }}" class="{{ request()->routeIs('super-admin.settings.*') ? 'active' : '' }}">App settings</a>
             <div class="nav-group">SaaS</div>
             <a href="{{ route('super-admin.saas-plans.index') }}" class="{{ request()->routeIs('super-admin.saas-plans.*') ? 'active' : '' }}">Plans</a>
             <a href="{{ route('super-admin.saas-subscriptions.index') }}" class="{{ request()->routeIs('super-admin.saas-subscriptions.*') ? 'active' : '' }}">Subscriptions</a>

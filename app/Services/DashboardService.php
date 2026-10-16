@@ -6,6 +6,7 @@ use App\Enums\MemberStatus;
 use App\Enums\NotificationStatus;
 use App\Enums\PaymentStatus;
 use App\Enums\SubscriptionStatus;
+use App\Models\AppSetting;
 use App\Models\Attendance;
 use App\Models\Member;
 use App\Models\NotificationLog;
@@ -33,6 +34,7 @@ class DashboardService
             ->sum('amount');
 
         return [
+            'app_lock_key' => AppSetting::appLockKey(),
             'business' => [
                 'owner_id' => $business?->owner_id,
                 'owner_name' => $business?->owner?->name ?? $user->name,

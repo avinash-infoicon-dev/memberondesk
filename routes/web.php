@@ -13,6 +13,7 @@ use App\Http\Controllers\Business\ReportController as BusinessReportController;
 use App\Http\Controllers\Business\SaasBillingController;
 use App\Http\Controllers\Business\SubscriptionController;
 use App\Http\Controllers\Public\PaymentPageController;
+use App\Http\Controllers\SuperAdmin\AppSettingController;
 use App\Http\Controllers\SuperAdmin\AuditLogController;
 use App\Http\Controllers\SuperAdmin\BusinessController;
 use App\Http\Controllers\SuperAdmin\DashboardController as SuperAdminDashboardController;
@@ -40,6 +41,8 @@ Route::post('/logout', [LoginController::class, 'destroy'])->middleware('auth')-
 Route::middleware(['auth', 'active.user', 'tenant'])->group(function () {
     Route::middleware('super_admin')->prefix('admin')->name('super-admin.')->group(function () {
         Route::get('/', SuperAdminDashboardController::class)->name('dashboard');
+        Route::get('settings', [AppSettingController::class, 'edit'])->name('settings.edit');
+        Route::put('settings', [AppSettingController::class, 'update'])->name('settings.update');
         Route::resource('businesses', BusinessController::class);
         Route::resource('saas-plans', SaasPlanController::class)->except('show')->parameters(['saas-plans' => 'saas_plan']);
         Route::get('saas-subscriptions', [SaasSubscriptionController::class, 'index'])->name('saas-subscriptions.index');
