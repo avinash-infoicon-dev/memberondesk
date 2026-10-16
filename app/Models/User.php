@@ -26,6 +26,7 @@ class User extends Authenticatable
         'role',
         'business_id',
         'is_active',
+        'can_access_app',
         'last_login_at',
     ];
 
@@ -42,6 +43,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'role' => UserRole::class,
             'is_active' => 'boolean',
+            'can_access_app' => 'boolean',
         ];
     }
 

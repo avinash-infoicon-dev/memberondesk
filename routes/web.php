@@ -50,6 +50,7 @@ Route::middleware(['auth', 'active.user', 'tenant'])->group(function () {
         Route::post('saas-subscriptions', [SaasSubscriptionController::class, 'store'])->name('saas-subscriptions.store');
         Route::get('saas-payments', [SaasPaymentController::class, 'index'])->name('saas-payments.index');
         Route::get('users', [UserController::class, 'index'])->name('users.index');
+        Route::patch('users/{user}/app-access', [UserController::class, 'updateAppAccess'])->name('users.app-access');
         Route::patch('users/{user}/toggle', [UserController::class, 'toggle'])->name('users.toggle');
         Route::get('reports', [SuperAdminReportController::class, 'index'])->name('reports.index');
         Route::get('audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');

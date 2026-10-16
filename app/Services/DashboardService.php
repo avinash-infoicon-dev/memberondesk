@@ -34,6 +34,7 @@ class DashboardService
             ->sum('amount');
 
         return [
+            'can_access_app' => (bool) $user->can_access_app,
             'app_lock_key' => AppSetting::appLockKey(),
             'business' => [
                 'owner_id' => $business?->owner_id,
