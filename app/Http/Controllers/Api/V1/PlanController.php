@@ -45,7 +45,8 @@ class PlanController extends Controller
             201
         );
     }
-
+ 
+    
     public function show(MembershipPlan $plan): JsonResponse
     {
         $this->authorize('view', $plan);
