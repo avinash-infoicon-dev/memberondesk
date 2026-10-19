@@ -30,7 +30,7 @@ class PlanController extends Controller
             MembershipPlanResource::collection($plans),
             'Data fetched successfully'
         );
-    }
+    } 
 
     public function store(StoreMembershipPlanRequest $request): JsonResponse
     {
