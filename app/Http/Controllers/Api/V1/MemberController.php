@@ -31,7 +31,7 @@ class MemberController extends Controller
         ]);
 
         $members = Member::query()
-            ->with(['activeQrCode', 'activeSubscription.plan'])
+            ->with(['activeQrCode', 'activeSubscription.plan', 'lastActiveSubscription.plan'])
             ->when($request->string('q')->toString(), function ($query, $q) {
                 $query->where(function ($inner) use ($q) {
                     $inner->where('name', 'like', "%{$q}%")
@@ -59,7 +59,11 @@ class MemberController extends Controller
     public function show(Member $member): JsonResponse
     {
         return ApiResponse::success(
-            new MemberResource($member->load(['activeQrCode', 'activeSubscription.plan'])),
+            new MemberResource($member->load([
+                'activeQrCode',
+                'activeSubscription.plan',
+                'lastActiveSubscription.plan',
+            ])),
             'Data fetched successfully'
         );
     }
@@ -75,7 +79,11 @@ class MemberController extends Controller
             $member->id
         );
 
-        $member = $this->members->update($member, $data)->load(['activeQrCode', 'activeSubscription.plan']);
+        $member = $this->members->update($member, $data)->load([
+            'activeQrCode',
+            'activeSubscription.plan',
+            'lastActiveSubscription.plan',
+        ]);
 
         if (
             $request->hasFile('profile_image')

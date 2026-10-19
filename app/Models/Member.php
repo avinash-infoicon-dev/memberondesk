@@ -61,6 +61,22 @@ class Member extends Model
         });
     }
 
+    /**
+     * Most recent subscription that was activated (currently active or expired).
+     */
+    public function lastActiveSubscription(): HasOne
+    {
+        return $this->hasOne(Subscription::class)->ofMany(
+            ['ends_at' => 'max', 'id' => 'max'],
+            function ($query) {
+                $query->whereIn('status', [
+                    SubscriptionStatus::Active,
+                    SubscriptionStatus::Expired,
+                ]);
+            }
+        );
+    }
+
     public function qrCodes(): HasMany
     {
         return $this->hasMany(MemberQrCode::class);

@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\BusinessStatus;
 use App\Enums\BusinessType;
 use App\Enums\MemberStatus;
+use App\Enums\SubscriptionStatus;
 use App\Enums\UserRole;
 use App\Models\Business;
 use App\Models\Member;
@@ -40,7 +41,9 @@ class MemberApiTest extends TestCase
             ->assertJsonPath('data.id', $member->id)
             ->assertJsonPath('data.name', 'Rahul Patil')
             ->assertJsonPath('data.current_plan_name', null)
-            ->assertJsonPath('data.active_subscription', null);
+            ->assertJsonPath('data.last_active_plan_name', null)
+            ->assertJsonPath('data.active_subscription', null)
+            ->assertJsonPath('data.last_active_subscription', null);
     }
 
     public function test_member_detail_includes_current_plan_name(): void
@@ -71,8 +74,49 @@ class MemberApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('success', true)
             ->assertJsonPath('data.current_plan_name', 'Gold Monthly')
+            ->assertJsonPath('data.last_active_plan_name', 'Gold Monthly')
             ->assertJsonPath('data.active_subscription.plan_name', 'Gold Monthly')
-            ->assertJsonPath('data.active_subscription.plan_id', $plan->id);
+            ->assertJsonPath('data.active_subscription.plan_id', $plan->id)
+            ->assertJsonPath('data.last_active_subscription.plan_name', 'Gold Monthly');
+    }
+
+    public function test_member_detail_includes_last_active_plan_when_expired(): void
+    {
+        $owner = $this->gymOwner();
+        app(TenantContext::class)->set($owner->business_id);
+
+        $member = Member::query()->create([
+            'business_id' => $owner->business_id,
+            'member_code' => 'M260006',
+            'name' => 'Amit Rao',
+            'phone' => '9666666666',
+            'status' => MemberStatus::Active,
+            'joined_at' => now()->subMonths(2),
+        ]);
+        $plan = MembershipPlan::query()->create([
+            'business_id' => $owner->business_id,
+            'name' => 'Silver Quarterly',
+            'duration_days' => 90,
+            'price' => 2999,
+            'is_active' => true,
+        ]);
+        $subscription = app(SubscriptionService::class)->assign($member, $plan, [
+            'activate' => true,
+            'starts_at' => now()->subMonths(2)->toDateString(),
+            'ends_at' => now()->subDay()->toDateString(),
+        ]);
+        $subscription->update(['status' => SubscriptionStatus::Expired]);
+
+        Sanctum::actingAs($owner);
+
+        $this->getJson('/api/v1/members/'.$member->id)
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.active_subscription', null)
+            ->assertJsonPath('data.current_plan_name', 'Silver Quarterly')
+            ->assertJsonPath('data.last_active_plan_name', 'Silver Quarterly')
+            ->assertJsonPath('data.last_active_subscription.plan_name', 'Silver Quarterly')
+            ->assertJsonPath('data.last_active_subscription.plan_id', $plan->id);
     }
 
     public function test_library_owner_cannot_view_a_gym_member(): void
