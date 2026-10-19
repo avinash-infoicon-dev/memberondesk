@@ -62,19 +62,27 @@ class Member extends Model
     }
 
     /**
-     * Most recent subscription that was activated (currently active or expired).
+     * Latest assigned subscription with status Active (by id), even if starts later.
+     * Used for "current plan" in the API when multiple Active rows exist.
+     */
+    public function latestActiveSubscription(): HasOne
+    {
+        return $this->hasOne(Subscription::class)->ofMany(['id' => 'max'], function ($query) {
+            $query->where('status', SubscriptionStatus::Active);
+        });
+    }
+
+    /**
+     * Most recently assigned subscription that was activated (Active or Expired).
      */
     public function lastActiveSubscription(): HasOne
     {
-        return $this->hasOne(Subscription::class)->ofMany(
-            ['ends_at' => 'max', 'id' => 'max'],
-            function ($query) {
-                $query->whereIn('status', [
-                    SubscriptionStatus::Active,
-                    SubscriptionStatus::Expired,
-                ]);
-            }
-        );
+        return $this->hasOne(Subscription::class)->ofMany(['id' => 'max'], function ($query) {
+            $query->whereIn('status', [
+                SubscriptionStatus::Active,
+                SubscriptionStatus::Expired,
+            ]);
+        });
     }
 
     public function qrCodes(): HasMany

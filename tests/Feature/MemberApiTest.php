@@ -119,6 +119,55 @@ class MemberApiTest extends TestCase
             ->assertJsonPath('data.last_active_subscription.plan_id', $plan->id);
     }
 
+    public function test_member_detail_prefers_latest_assigned_active_plan(): void
+    {
+        $owner = $this->gymOwner();
+        app(TenantContext::class)->set($owner->business_id);
+
+        $member = Member::query()->create([
+            'business_id' => $owner->business_id,
+            'member_code' => 'M260007',
+            'name' => 'Neha Verma',
+            'phone' => '9555555555',
+            'status' => MemberStatus::Active,
+            'joined_at' => now(),
+        ]);
+        $basic = MembershipPlan::query()->create([
+            'business_id' => $owner->business_id,
+            'name' => 'Basic',
+            'duration_days' => 30,
+            'price' => 499,
+            'is_active' => true,
+        ]);
+        $silver = MembershipPlan::query()->create([
+            'business_id' => $owner->business_id,
+            'name' => 'Silver',
+            'duration_days' => 30,
+            'price' => 999,
+            'is_active' => true,
+        ]);
+
+        app(SubscriptionService::class)->assign($member, $basic, [
+            'activate' => true,
+            'starts_at' => now()->toDateString(),
+            'ends_at' => now()->addDays(30)->toDateString(),
+        ]);
+        $latest = app(SubscriptionService::class)->assign($member, $silver, [
+            'activate' => true,
+            'starts_at' => now()->addMonths(3)->toDateString(),
+            'ends_at' => now()->addMonths(4)->toDateString(),
+        ]);
+
+        Sanctum::actingAs($owner);
+
+        $this->getJson('/api/v1/members/'.$member->id)
+            ->assertOk()
+            ->assertJsonPath('data.current_plan_name', 'Silver')
+            ->assertJsonPath('data.active_subscription.plan_name', 'Silver')
+            ->assertJsonPath('data.active_subscription.id', $latest->id)
+            ->assertJsonPath('data.last_active_plan_name', 'Silver');
+    }
+
     public function test_library_owner_cannot_view_a_gym_member(): void
     {
         $gymOwner = $this->gymOwner();

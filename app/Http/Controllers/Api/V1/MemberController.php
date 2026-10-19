@@ -31,7 +31,12 @@ class MemberController extends Controller
         ]);
 
         $members = Member::query()
-            ->with(['activeQrCode', 'activeSubscription.plan', 'lastActiveSubscription.plan'])
+            ->with([
+                'activeQrCode',
+                'activeSubscription.plan',
+                'latestActiveSubscription.plan',
+                'lastActiveSubscription.plan',
+            ])
             ->when($request->string('q')->toString(), function ($query, $q) {
                 $query->where(function ($inner) use ($q) {
                     $inner->where('name', 'like', "%{$q}%")
@@ -62,6 +67,7 @@ class MemberController extends Controller
             new MemberResource($member->load([
                 'activeQrCode',
                 'activeSubscription.plan',
+                'latestActiveSubscription.plan',
                 'lastActiveSubscription.plan',
             ])),
             'Data fetched successfully'
@@ -82,6 +88,7 @@ class MemberController extends Controller
         $member = $this->members->update($member, $data)->load([
             'activeQrCode',
             'activeSubscription.plan',
+            'latestActiveSubscription.plan',
             'lastActiveSubscription.plan',
         ]);
 
