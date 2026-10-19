@@ -17,7 +17,6 @@ class PlanController extends Controller
         $this->authorizeResource(MembershipPlan::class, 'plan');
     } 
 
-    
     public function index(): JsonResponse
     {
         $this->authorize('viewAny', MembershipPlan::class);
