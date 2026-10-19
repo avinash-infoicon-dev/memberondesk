@@ -32,11 +32,12 @@ php_serve(
     provider = "laravel",
     commands = {
         "start": "php -S 0.0.0.0:{} -t public public/wasmer-router.php".format(config.port),
-        "after_deploy": "mkdir -p public/uploads storage/app/public storage/framework/sessions storage/framework/views storage/framework/cache/data storage/logs bootstrap/cache && php artisan migrate --force",
+        # No shell `mkdir` — Wasmer cannot run that binary. Dirs are created
+        # in build_post; runtime ensure + migrate via PHP only.
+        "after_deploy": "php -r '$d=[\"public/uploads\",\"storage/app/public\",\"storage/framework/sessions\",\"storage/framework/views\",\"storage/framework/cache/data\",\"storage/logs\",\"bootstrap/cache\"];foreach($d as $p){@mkdir($p,0777,true);}' && php artisan migrate --force",
     },
     prepare = [
         workdir(build.app.serve_path),
-        run("mkdir -p storage/framework/{sessions,views,cache,testing} storage/logs bootstrap/cache"),
         run("php artisan config:cache"),
         run("php artisan event:cache"),
         run("php artisan route:cache"),
