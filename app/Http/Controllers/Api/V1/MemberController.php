@@ -35,7 +35,7 @@ class MemberController extends Controller
                 'activeQrCode',
                 'activeSubscription.plan',
                 'latestActiveSubscription.plan',
-                'lastActiveSubscription.plan',
+                'activatedSubscriptions.plan',
             ])
             ->when($request->string('q')->toString(), function ($query, $q) {
                 $query->where(function ($inner) use ($q) {
@@ -68,7 +68,7 @@ class MemberController extends Controller
                 'activeQrCode',
                 'activeSubscription.plan',
                 'latestActiveSubscription.plan',
-                'lastActiveSubscription.plan',
+                'activatedSubscriptions.plan',
             ])),
             'Data fetched successfully'
         );
@@ -89,7 +89,7 @@ class MemberController extends Controller
             'activeQrCode',
             'activeSubscription.plan',
             'latestActiveSubscription.plan',
-            'lastActiveSubscription.plan',
+            'activatedSubscriptions.plan',
         ]);
 
         if (

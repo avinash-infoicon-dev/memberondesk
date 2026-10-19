@@ -74,10 +74,10 @@ class MemberApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('success', true)
             ->assertJsonPath('data.current_plan_name', 'Gold Monthly')
-            ->assertJsonPath('data.last_active_plan_name', 'Gold Monthly')
+            ->assertJsonPath('data.last_active_plan_name', null)
             ->assertJsonPath('data.active_subscription.plan_name', 'Gold Monthly')
             ->assertJsonPath('data.active_subscription.plan_id', $plan->id)
-            ->assertJsonPath('data.last_active_subscription.plan_name', 'Gold Monthly');
+            ->assertJsonPath('data.last_active_subscription', null);
     }
 
     public function test_member_detail_includes_last_active_plan_when_expired(): void
@@ -114,9 +114,8 @@ class MemberApiTest extends TestCase
             ->assertJsonPath('success', true)
             ->assertJsonPath('data.active_subscription', null)
             ->assertJsonPath('data.current_plan_name', 'Silver Quarterly')
-            ->assertJsonPath('data.last_active_plan_name', 'Silver Quarterly')
-            ->assertJsonPath('data.last_active_subscription.plan_name', 'Silver Quarterly')
-            ->assertJsonPath('data.last_active_subscription.plan_id', $plan->id);
+            ->assertJsonPath('data.last_active_plan_name', null)
+            ->assertJsonPath('data.last_active_subscription', null);
     }
 
     public function test_member_detail_prefers_latest_assigned_active_plan(): void
@@ -147,7 +146,7 @@ class MemberApiTest extends TestCase
             'is_active' => true,
         ]);
 
-        app(SubscriptionService::class)->assign($member, $basic, [
+        $previous = app(SubscriptionService::class)->assign($member, $basic, [
             'activate' => true,
             'starts_at' => now()->toDateString(),
             'ends_at' => now()->addDays(30)->toDateString(),
@@ -165,7 +164,9 @@ class MemberApiTest extends TestCase
             ->assertJsonPath('data.current_plan_name', 'Silver')
             ->assertJsonPath('data.active_subscription.plan_name', 'Silver')
             ->assertJsonPath('data.active_subscription.id', $latest->id)
-            ->assertJsonPath('data.last_active_plan_name', 'Silver');
+            ->assertJsonPath('data.last_active_plan_name', 'Basic')
+            ->assertJsonPath('data.last_active_subscription.plan_name', 'Basic')
+            ->assertJsonPath('data.last_active_subscription.id', $previous->id);
     }
 
     public function test_library_owner_cannot_view_a_gym_member(): void

@@ -2,24 +2,17 @@
 
 namespace App\Http\Resources\Api\V1;
 
+use App\Models\Subscription;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Collection;
 
 class MemberResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
         $status = $this->displayStatus();
-
-        // Prefer the latest assigned Active plan (by id), not merely the
-        // date-window row — members can have overlapping Active subscriptions.
-        $current = $this->relationLoaded('latestActiveSubscription')
-            ? $this->latestActiveSubscription
-            : ($this->relationLoaded('activeSubscription') ? $this->activeSubscription : null);
-
-        $lastActive = $this->relationLoaded('lastActiveSubscription')
-            ? $this->lastActiveSubscription
-            : null;
+        [$current, $previous, $nameFallback] = $this->currentAndPreviousSubscriptions();
 
         return [
             'id' => $this->id,
@@ -35,34 +28,74 @@ class MemberResource extends JsonResource
             'joined_at' => $this->joined_at?->toDateString(),
             'qr_token' => $this->whenLoaded('activeQrCode', fn () => $this->activeQrCode?->token),
             'current_plan_name' => $this->when(
-                $this->relationLoaded('latestActiveSubscription')
-                    || $this->relationLoaded('activeSubscription')
-                    || $this->relationLoaded('lastActiveSubscription'),
-                fn () => $current?->plan?->name ?? $lastActive?->plan?->name
+                $this->subscriptionRelationsLoaded(),
+                fn () => $current?->plan?->name ?? $nameFallback?->plan?->name
             ),
             'last_active_plan_name' => $this->when(
-                $this->relationLoaded('lastActiveSubscription'),
-                fn () => $lastActive?->plan?->name
+                $this->relationLoaded('activatedSubscriptions'),
+                fn () => $previous?->plan?->name
             ),
             'active_subscription' => $this->when(
-                $this->relationLoaded('latestActiveSubscription') || $this->relationLoaded('activeSubscription'),
-                fn () => $current ? [
-                    'id' => $current->id,
-                    'status' => $current->status,
-                    'starts_at' => $current->starts_at?->toDateString(),
-                    'ends_at' => $current->ends_at?->toDateString(),
-                    'plan_id' => $current->membership_plan_id,
-                    'plan_name' => $current->plan?->name,
-                ] : null
+                $this->subscriptionRelationsLoaded(),
+                fn () => $this->subscriptionPayload($current)
             ),
-            'last_active_subscription' => $this->whenLoaded('lastActiveSubscription', fn () => $lastActive ? [
-                'id' => $lastActive->id,
-                'status' => $lastActive->status,
-                'starts_at' => $lastActive->starts_at?->toDateString(),
-                'ends_at' => $lastActive->ends_at?->toDateString(),
-                'plan_id' => $lastActive->membership_plan_id,
-                'plan_name' => $lastActive->plan?->name,
-            ] : null),
+            'last_active_subscription' => $this->when(
+                $this->relationLoaded('activatedSubscriptions'),
+                fn () => $this->subscriptionPayload($previous)
+            ),
+        ];
+    }
+
+    /**
+     * @return array{0: ?Subscription, 1: ?Subscription, 2: ?Subscription}
+     */
+    private function currentAndPreviousSubscriptions(): array
+    {
+        /** @var Collection<int, Subscription> $activated */
+        $activated = $this->relationLoaded('activatedSubscriptions')
+            ? $this->activatedSubscriptions
+            : collect();
+
+        $current = $this->relationLoaded('latestActiveSubscription')
+            ? $this->latestActiveSubscription
+            : null;
+
+        if (! $current && $this->relationLoaded('activeSubscription')) {
+            $current = $this->activeSubscription;
+        }
+
+        if ($current) {
+            $previous = $activated->first(fn (Subscription $row) => $row->id !== $current->id);
+            $nameFallback = null;
+        } else {
+            // No Active row: newest activated is name-only fallback; previous is second-newest.
+            $nameFallback = $activated->first();
+            $previous = $activated->skip(1)->first();
+        }
+
+        return [$current, $previous, $nameFallback];
+    }
+
+    private function subscriptionRelationsLoaded(): bool
+    {
+        return $this->relationLoaded('latestActiveSubscription')
+            || $this->relationLoaded('activeSubscription')
+            || $this->relationLoaded('activatedSubscriptions');
+    }
+
+    private function subscriptionPayload(?Subscription $subscription): ?array
+    {
+        if (! $subscription) {
+            return null;
+        }
+
+        return [
+            'id' => $subscription->id,
+            'status' => $subscription->status,
+            'starts_at' => $subscription->starts_at?->toDateString(),
+            'ends_at' => $subscription->ends_at?->toDateString(),
+            'plan_id' => $subscription->membership_plan_id,
+            'plan_name' => $subscription->plan?->name,
         ];
     }
 }

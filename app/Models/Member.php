@@ -73,16 +73,17 @@ class Member extends Model
     }
 
     /**
-     * Most recently assigned subscription that was activated (Active or Expired).
+     * Activated subscriptions (Active or Expired), newest first.
+     * API uses [0] as current fallback and [1] as previous / last-active.
      */
-    public function lastActiveSubscription(): HasOne
+    public function activatedSubscriptions(): HasMany
     {
-        return $this->hasOne(Subscription::class)->ofMany(['id' => 'max'], function ($query) {
-            $query->whereIn('status', [
+        return $this->hasMany(Subscription::class)
+            ->whereIn('status', [
                 SubscriptionStatus::Active,
                 SubscriptionStatus::Expired,
-            ]);
-        });
+            ])
+            ->orderByDesc('id');
     }
 
     public function qrCodes(): HasMany
