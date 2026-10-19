@@ -23,7 +23,7 @@ class PlanController extends Controller
 
         $plans = MembershipPlan::query()
             ->where('is_active', true)
-            ->orderBy('name')
+            ->orderBy('id', 'desc')
             ->get();
 
         return ApiResponse::success(
