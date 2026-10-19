@@ -1,5 +1,6 @@
 # Wasmer Build Config runs install before COPY. Stage lockfiles into /app
 # so `npm install` / `composer install` can see them.
+# Also ensure Laravel storage dirs + public/storage symlink exist after build.
 
 load("//anybuild/tools:laravel.bzl", "laravel_build", "laravel_config", "laravel_serve")
 
@@ -28,4 +29,18 @@ laravel_serve(
         copy("composer.lock") if file_exists("composer.lock") else None,
         copy("package.json") if file_exists("package.json") else None,
     ],
+    build_post = [
+        run(
+            "mkdir -p storage/app/public storage/framework/sessions storage/framework/views storage/framework/cache/data storage/framework/testing storage/logs bootstrap/cache",
+            group = "build",
+        ),
+        run(
+            "rm -rf public/storage && ln -sfn ../storage/app/public public/storage",
+            group = "build",
+        ),
+    ],
+    commands = {
+        "start": "php -S 0.0.0.0:{} -t public".format(config.port),
+        "after_deploy": "mkdir -p storage/app/public storage/framework/sessions storage/framework/views storage/framework/cache/data storage/logs bootstrap/cache && rm -rf public/storage && ln -sfn ../storage/app/public public/storage && php artisan migrate --force",
+    },
 )
