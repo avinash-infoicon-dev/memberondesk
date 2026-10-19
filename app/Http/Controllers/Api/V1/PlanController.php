@@ -15,7 +15,7 @@ class PlanController extends Controller
     public function __construct()
     {
         $this->authorizeResource(MembershipPlan::class, 'plan');
-    }
+    } 
 
     public function index(): JsonResponse
     {
