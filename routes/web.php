@@ -28,6 +28,23 @@ Route::get('/', function () {
     return view('welcome');
 })->name('home');
 
+// Legacy /storage/* URLs (pre-uploads disk). Prefer public/uploads, then storage/app/public.
+Route::get('/storage/{path}', function (string $path) {
+    $path = str_replace(['..', '\\'], '', $path);
+    $candidates = [
+        public_path('uploads/'.$path),
+        storage_path('app/public/'.$path),
+    ];
+
+    foreach ($candidates as $file) {
+        if (is_file($file)) {
+            return response()->file($file);
+        }
+    }
+
+    abort(404);
+})->where('path', '.*')->name('storage.legacy');
+
 Route::get('/pay/{token}', [PaymentPageController::class, 'show'])->name('public.pay.show');
 Route::get('/pay/{token}/qr.png', [PaymentPageController::class, 'qr'])->name('public.pay.qr');
 

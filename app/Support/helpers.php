@@ -40,7 +40,10 @@ if (! function_exists('public_storage_url')) {
             return $path;
         }
 
-        $relative = 'storage/'.ltrim($path, '/');
+        $path = ltrim($path, '/');
+
+        // Prefer /uploads (real public files). Fall back to /storage for older paths.
+        $relative = str_starts_with($path, 'uploads/') ? $path : 'uploads/'.$path;
 
         if (app()->runningInConsole() || ! app()->bound('request') || ! request()) {
             return asset($relative);
