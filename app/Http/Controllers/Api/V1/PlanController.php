@@ -29,7 +29,7 @@ class PlanController extends Controller
         return ApiResponse::success(
             MembershipPlanResource::collection($plans),
             'Data fetched successfully'
-        );
+        ); 
     } 
 
     public function store(StoreMembershipPlanRequest $request): JsonResponse
