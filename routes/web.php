@@ -28,6 +28,16 @@ Route::get('/', function () {
     return view('welcome');
 })->name('home');
 
+// Serve /uploads/* via Laravel if the PHP built-in server does not.
+Route::get('/uploads/{path}', function (string $path) {
+    $path = str_replace(['..', '\\'], '', $path);
+    $file = public_path('uploads/'.$path);
+
+    abort_unless(is_file($file), 404);
+
+    return response()->file($file);
+})->where('path', '.*')->name('uploads.serve');
+
 // Legacy /storage/* URLs (pre-uploads disk). Prefer public/uploads, then storage/app/public.
 Route::get('/storage/{path}', function (string $path) {
     $path = str_replace(['..', '\\'], '', $path);

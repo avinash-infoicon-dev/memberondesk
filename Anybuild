@@ -1,14 +1,13 @@
 # Wasmer Build Config runs install before COPY. Stage lockfiles into /app
 # so `npm install` / `composer install` can see them.
-# Uploads live in public/uploads (served directly by php -S).
+# Uploads live in public/uploads on a persistent Wasmer volume.
 #
-# Use php_serve (not laravel_serve): laravel_serve hardcodes
-# commands=laravel_commands(config) and then **overrides, so passing
-# commands= causes "Argument 'commands' occurs more than once" and
-# locks the Wasmer Build Config UI.
+# Call serve() directly (not laravel_serve / php_serve overrides for
+# commands/volumes): those helpers hardcode named args then **overrides,
+# which duplicates commands=/volumes= and breaks the plan.
 
 load("//anybuild/tools:laravel.bzl", "laravel_build", "laravel_config")
-load("//anybuild/tools:php.bzl", "php_serve")
+load("//anybuild:serve.bzl", "serve")
 
 config = laravel_config(
     schema = 1,
@@ -25,15 +24,15 @@ config = laravel_config(
 
 build = laravel_build(config)
 
-php_serve(
+serve(
     config,
     build,
     name = "memberondesk",
     provider = "laravel",
+    cwd = build.app.serve_path,
     commands = {
         "start": "php -S 0.0.0.0:{} -t public public/wasmer-router.php".format(config.port),
-        # No shell `mkdir` — Wasmer cannot run that binary. Dirs are created
-        # in build_post; runtime ensure + migrate via PHP only.
+        # No shell `mkdir` — Wasmer cannot run that binary.
         "after_deploy": "php -r '$d=[\"public/uploads\",\"storage/app/public\",\"storage/framework/sessions\",\"storage/framework/views\",\"storage/framework/cache/data\",\"storage/logs\",\"bootstrap/cache\"];foreach($d as $p){@mkdir($p,0777,true);}' && php artisan migrate --force",
     },
     prepare = [
@@ -42,6 +41,10 @@ php_serve(
         run("php artisan event:cache"),
         run("php artisan route:cache"),
         run("php artisan view:cache"),
+    ],
+    # Persist member/profile images across redeploys.
+    volumes = [
+        volume("laravel-uploads", "{}/public/uploads".format(build.app.serve_path)),
     ],
     build_pre = [
         workdir("/app"),
