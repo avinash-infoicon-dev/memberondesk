@@ -8,7 +8,9 @@ use App\Enums\MemberStatus;
 use App\Enums\UserRole;
 use App\Models\Business;
 use App\Models\Member;
+use App\Models\MembershipPlan;
 use App\Models\User;
+use App\Services\SubscriptionService;
 use App\Support\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
@@ -36,7 +38,41 @@ class MemberApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('success', true)
             ->assertJsonPath('data.id', $member->id)
-            ->assertJsonPath('data.name', 'Rahul Patil');
+            ->assertJsonPath('data.name', 'Rahul Patil')
+            ->assertJsonPath('data.current_plan_name', null)
+            ->assertJsonPath('data.active_subscription', null);
+    }
+
+    public function test_member_detail_includes_current_plan_name(): void
+    {
+        $owner = $this->gymOwner();
+        app(TenantContext::class)->set($owner->business_id);
+
+        $member = Member::query()->create([
+            'business_id' => $owner->business_id,
+            'member_code' => 'M260005',
+            'name' => 'Sneha Shah',
+            'phone' => '9777777777',
+            'status' => MemberStatus::Active,
+            'joined_at' => now(),
+        ]);
+        $plan = MembershipPlan::query()->create([
+            'business_id' => $owner->business_id,
+            'name' => 'Gold Monthly',
+            'duration_days' => 30,
+            'price' => 1499,
+            'is_active' => true,
+        ]);
+        app(SubscriptionService::class)->assign($member, $plan, ['activate' => true]);
+
+        Sanctum::actingAs($owner);
+
+        $this->getJson('/api/v1/members/'.$member->id)
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.current_plan_name', 'Gold Monthly')
+            ->assertJsonPath('data.active_subscription.plan_name', 'Gold Monthly')
+            ->assertJsonPath('data.active_subscription.plan_id', $plan->id);
     }
 
     public function test_library_owner_cannot_view_a_gym_member(): void

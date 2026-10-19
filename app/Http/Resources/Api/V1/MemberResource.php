@@ -24,11 +24,17 @@ class MemberResource extends JsonResource
             'account_status' => $this->status,
             'joined_at' => $this->joined_at?->toDateString(),
             'qr_token' => $this->whenLoaded('activeQrCode', fn () => $this->activeQrCode?->token),
+            'current_plan_name' => $this->when(
+                $this->relationLoaded('activeSubscription'),
+                fn () => $this->activeSubscription?->plan?->name
+            ),
             'active_subscription' => $this->whenLoaded('activeSubscription', fn () => $this->activeSubscription ? [
                 'id' => $this->activeSubscription->id,
                 'status' => $this->activeSubscription->status,
                 'starts_at' => $this->activeSubscription->starts_at?->toDateString(),
                 'ends_at' => $this->activeSubscription->ends_at?->toDateString(),
+                'plan_id' => $this->activeSubscription->membership_plan_id,
+                'plan_name' => $this->activeSubscription->plan?->name,
             ] : null),
         ];
     }

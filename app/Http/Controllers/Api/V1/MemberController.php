@@ -31,7 +31,7 @@ class MemberController extends Controller
         ]);
 
         $members = Member::query()
-            ->with(['activeQrCode', 'activeSubscription'])
+            ->with(['activeQrCode', 'activeSubscription.plan'])
             ->when($request->string('q')->toString(), function ($query, $q) {
                 $query->where(function ($inner) use ($q) {
                     $inner->where('name', 'like', "%{$q}%")
@@ -75,7 +75,7 @@ class MemberController extends Controller
             $member->id
         );
 
-        $member = $this->members->update($member, $data)->load(['activeQrCode', 'activeSubscription']);
+        $member = $this->members->update($member, $data)->load(['activeQrCode', 'activeSubscription.plan']);
 
         if (
             $request->hasFile('profile_image')
