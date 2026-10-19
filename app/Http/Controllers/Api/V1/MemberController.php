@@ -12,6 +12,8 @@ use App\Models\Member;
 use App\Services\MemberService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class MemberController extends Controller
@@ -46,7 +48,10 @@ class MemberController extends Controller
 
     public function store(StoreMemberRequest $request): JsonResponse
     {
-        $member = $this->members->create($request->validated())->load('activeQrCode');
+        $data = $request->safe()->except(['profile_image']);
+        $data = $this->applyProfileImage($request->file('profile_image'), $data, $request->user()->business_id);
+
+        $member = $this->members->create($data)->load('activeQrCode');
 
         return ApiResponse::success(new MemberResource($member), 'Member created successfully', 201);
     }
@@ -61,16 +66,64 @@ class MemberController extends Controller
 
     public function update(UpdateMemberRequest $request, Member $member): JsonResponse
     {
+        $data = $request->safe()->except(['profile_image']);
+        $oldPhoto = $member->photo_path;
+        $data = $this->applyProfileImage(
+            $request->file('profile_image'),
+            $data,
+            $request->user()->business_id,
+            $member->id
+        );
+
+        $member = $this->members->update($member, $data)->load(['activeQrCode', 'activeSubscription']);
+
+        if (
+            $request->hasFile('profile_image')
+            && $oldPhoto
+            && $oldPhoto !== $member->photo_path
+        ) {
+            Storage::disk('public')->delete($oldPhoto);
+        }
+
         return ApiResponse::success(
-            new MemberResource($this->members->update($member, $request->validated())->load(['activeQrCode', 'activeSubscription'])),
+            new MemberResource($member),
             'Member updated successfully'
         );
     }
 
     public function destroy(Member $member): JsonResponse
     {
+        $photo = $member->photo_path;
         $this->members->delete($member);
 
+        if ($photo) {
+            Storage::disk('public')->delete($photo);
+        }
+
         return ApiResponse::success(null, 'Member deleted successfully');
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function applyProfileImage(
+        ?UploadedFile $file,
+        array $data,
+        ?int $businessId,
+        ?int $memberId = null,
+    ): array {
+        if (! $file) {
+            return $data;
+        }
+
+        $folder = 'member-images/'.($businessId ?: 'shared');
+        if ($memberId) {
+            $folder .= '/'.$memberId;
+        }
+
+        $data['photo_path'] = $file->store($folder, 'public');
+
+        return $data;
     }
 }

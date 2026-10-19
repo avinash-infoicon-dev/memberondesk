@@ -28,3 +28,24 @@ if (! function_exists('status_badge_class')) {
         };
     }
 }
+
+if (! function_exists('public_storage_url')) {
+    function public_storage_url(?string $path): ?string
+    {
+        if (! $path) {
+            return null;
+        }
+
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            return $path;
+        }
+
+        $relative = 'storage/'.ltrim($path, '/');
+
+        if (app()->runningInConsole() || ! app()->bound('request') || ! request()) {
+            return asset($relative);
+        }
+
+        return rtrim(request()->getSchemeAndHttpHost().request()->getBasePath(), '/').'/'.$relative;
+    }
+}

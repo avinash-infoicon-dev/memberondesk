@@ -13,7 +13,6 @@ use App\Models\NotificationLog;
 use App\Models\Payment;
 use App\Models\Subscription;
 use App\Models\User;
-use Illuminate\Support\Facades\Storage;
 
 class DashboardService
 {
@@ -223,14 +222,6 @@ class DashboardService
 
     private function publicUrl(?string $path): ?string
     {
-        if (! $path) {
-            return null;
-        }
-
-        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
-            return $path;
-        }
-
-        return Storage::disk('public')->url($path);
+        return public_storage_url($path);
     }
 }

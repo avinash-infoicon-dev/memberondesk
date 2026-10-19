@@ -42,6 +42,11 @@ class Member extends Model
         ];
     }
 
+    public function getProfileImageUrlAttribute(): ?string
+    {
+        return public_storage_url($this->photo_path);
+    }
+
     public function subscriptions(): HasMany
     {
         return $this->hasMany(Subscription::class);

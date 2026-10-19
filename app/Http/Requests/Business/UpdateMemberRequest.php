@@ -30,6 +30,7 @@ class UpdateMemberRequest extends FormRequest
             'status' => ['sometimes', Rule::enum(MemberStatus::class)],
             'joined_at' => ['nullable', 'date'],
             'notes' => ['nullable', 'string'],
+            'profile_image' => ['sometimes', 'nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ];
     }
 }
