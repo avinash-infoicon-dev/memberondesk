@@ -21,6 +21,7 @@ class MemberResource extends JsonResource
             'email' => $this->email,
             'phone' => $this->phone,
             'gender' => $this->gender,
+            'address' => $this->address,
             'profile_image_url' => $this->profile_image_url,
             'status' => $status->value,
             'status_label' => $status->label(),
