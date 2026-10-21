@@ -21,7 +21,7 @@ class StoreMemberRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255'],
-            'phone' => ['required', 'string', 'max:20', Rule::unique('members', 'phone')->where('business_id', $businessId)],
+            'phone' => ['nullable', 'string', 'max:20', Rule::unique('members', 'phone')->where('business_id', $businessId)],
             'gender' => ['nullable', 'in:male,female,other'],
             'date_of_birth' => ['nullable', 'date'],
             'address' => ['nullable', 'string', 'max:255'],

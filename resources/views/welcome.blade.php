@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Member On Desk</title>
+    <title>MoD</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
@@ -13,7 +13,7 @@
     <nav>
         <div class="brand">
             <div class="brand-mark">M</div>
-            <strong>Member On Desk</strong>
+            <strong>MoD</strong>
         </div>
         <a class="btn btn-light" href="{{ route('login') }}">Sign in</a>
     </nav>
