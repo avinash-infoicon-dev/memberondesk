@@ -56,6 +56,20 @@ class MembershipFlowTest extends TestCase
         $this->assertSame(AttendanceSource::Qr, $attendance->source);
     }
 
+    public function test_qr_scan_rejects_second_attendance_same_day(): void
+    {
+        [$owner, $member, $plan] = $this->desk();
+        app(TenantContext::class)->set($owner->business_id);
+
+        app(SubscriptionService::class)->assign($member, $plan, ['activate' => true]);
+        $qr = app(QrCodeService::class)->generateFor($member);
+
+        app(AttendanceService::class)->scan($qr->token, $owner);
+
+        $this->expectException(\Illuminate\Validation\ValidationException::class);
+        app(AttendanceService::class)->scan($qr->token, $owner);
+    }
+
     public function test_invalid_qr_is_rejected(): void
     {
         [$owner] = $this->desk();

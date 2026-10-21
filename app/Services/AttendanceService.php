@@ -52,21 +52,19 @@ class AttendanceService
                 ->latest('id')
                 ->first();
 
-        $open = Attendance::query()
-            ->where('member_id', $member->id)
-            ->whereDate('check_in_at', now())
-            ->whereNull('check_out_at')
-            ->latest('id')
-            ->first();
-
-        if ($open) {
-            $open->update(['check_out_at' => now()]);
-            $this->audit->log('attendance.checked_out', $open);
-
-            return $open->fresh(['member', 'subscription']);
-        }
-
         return DB::transaction(function () use ($member, $subscription, $source, $scanner) {
+            $alreadyToday = Attendance::query()
+                ->where('member_id', $member->id)
+                ->whereDate('check_in_at', now())
+                ->lockForUpdate()
+                ->exists();
+
+            if ($alreadyToday) {
+                throw ValidationException::withMessages([
+                    'attendance' => 'Attendance already recorded for today.',
+                ]);
+            }
+
             $attendance = Attendance::query()->create([
                 'business_id' => $member->business_id,
                 'member_id' => $member->id,

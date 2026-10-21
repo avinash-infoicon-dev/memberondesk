@@ -45,7 +45,7 @@ class AttendanceController extends Controller
         $attendance = $this->attendance->scan($data['token'], $request->user());
 
         return response()->json([
-            'message' => $attendance->check_out_at ? 'Checked out' : 'Checked in',
+            'message' => 'Checked in',
             'attendance' => [
                 'id' => $attendance->id,
                 'member' => $attendance->member?->name,
