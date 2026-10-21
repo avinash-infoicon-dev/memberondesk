@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\BusinessStatus;
 use App\Enums\BusinessType;
+use App\Enums\MemberPhoneStorage;
 use App\Enums\SaasSubscriptionStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -32,6 +33,7 @@ class Business extends Model
         'status',
         'timezone',
         'whatsapp_enabled',
+        'member_phone_storage',
         'settings',
         'activated_at',
         'suspended_at',
@@ -43,10 +45,21 @@ class Business extends Model
             'type' => BusinessType::class,
             'status' => BusinessStatus::class,
             'whatsapp_enabled' => 'boolean',
+            'member_phone_storage' => MemberPhoneStorage::class,
             'settings' => 'array',
             'activated_at' => 'datetime',
             'suspended_at' => 'datetime',
         ];
+    }
+
+    public function storesPhoneOnDeviceOnly(): bool
+    {
+        return $this->member_phone_storage === MemberPhoneStorage::DeviceLocal;
+    }
+
+    public function storesEncryptedPhoneOnServer(): bool
+    {
+        return $this->member_phone_storage === MemberPhoneStorage::ServerEncrypted;
     }
 
     protected static function booted(): void

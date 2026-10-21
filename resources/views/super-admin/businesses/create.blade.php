@@ -33,6 +33,18 @@
                 <label>State <input name="state" value="{{ old('state') }}"></label>
             </div>
             <label>Pincode <input name="pincode" value="{{ old('pincode') }}"></label>
+            <h3>Member mobile privacy</h3>
+            <label>How should member phone numbers be stored?
+                <select name="member_phone_storage" required>
+                    @foreach(\App\Enums\MemberPhoneStorage::cases() as $mode)
+                        <option value="{{ $mode->value }}" @selected(old('member_phone_storage', 'device_local') === $mode->value)>{{ $mode->label() }}</option>
+                    @endforeach
+                </select>
+            </label>
+            <p class="muted" style="margin-top:-8px">
+                <strong>Device only:</strong> phone stays on the Android app; server keeps other member data.<br>
+                <strong>Encrypted on server:</strong> app encrypts phone with K1; server stores ciphertext and K1 wrapped by recovery key K2.
+            </p>
             <h3>Owner account</h3>
             <div class="form-row">
                 <label>Owner name <input name="owner_name" value="{{ old('owner_name') }}" required></label>

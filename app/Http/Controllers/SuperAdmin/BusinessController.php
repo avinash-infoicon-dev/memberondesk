@@ -54,6 +54,7 @@ class BusinessController extends Controller
             $business = Business::query()->create([
                 ...$request->safe()->only([
                     'name', 'type', 'email', 'phone', 'upi_id', 'address', 'city', 'state', 'pincode', 'status',
+                    'member_phone_storage',
                 ]),
                 'owner_id' => $owner->id,
                 'activated_at' => $request->enum('status', BusinessStatus::class) === BusinessStatus::Active ? now() : null,
@@ -89,6 +90,7 @@ class BusinessController extends Controller
         $business->update([
             ...$request->safe()->only([
                 'name', 'type', 'email', 'phone', 'upi_id', 'address', 'city', 'state', 'pincode', 'status',
+                'member_phone_storage',
             ]),
             'whatsapp_enabled' => $request->boolean('whatsapp_enabled'),
             'activated_at' => $status === BusinessStatus::Active ? ($business->activated_at ?? now()) : $business->activated_at,

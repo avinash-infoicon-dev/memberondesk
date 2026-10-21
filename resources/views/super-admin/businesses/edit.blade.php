@@ -34,6 +34,18 @@
             <label style="display:flex;gap:8px;align-items:center;font-weight:500">
                 <input type="checkbox" name="whatsapp_enabled" value="1" @checked(old('whatsapp_enabled', $business->whatsapp_enabled)) style="width:auto"> WhatsApp enabled
             </label>
+            <h3>Member mobile privacy</h3>
+            <label>How should member phone numbers be stored?
+                <select name="member_phone_storage" required>
+                    @foreach(\App\Enums\MemberPhoneStorage::cases() as $mode)
+                        <option value="{{ $mode->value }}" @selected(old('member_phone_storage', $business->member_phone_storage?->value ?? 'device_local') === $mode->value)>{{ $mode->label() }}</option>
+                    @endforeach
+                </select>
+            </label>
+            <p class="muted" style="margin-top:-8px">
+                <strong>Device only:</strong> phone stays on the Android app; server keeps other member data.<br>
+                <strong>Encrypted on server:</strong> app encrypts phone with K1; server stores ciphertext and K1 wrapped by recovery key K2.
+            </p>
             <button class="btn btn-primary" type="submit">Save</button>
         </form>
     </div></div>

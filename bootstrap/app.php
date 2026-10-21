@@ -35,6 +35,11 @@ $app = Application::configure(basePath: dirname(__DIR__))
             'business.active' => EnsureBusinessActive::class,
         ]);
 
+        // PHP does not parse multipart PUT/PATCH; required for member photo updates.
+        $middleware->api(prepend: [
+            \App\Http\Middleware\ParseMultipartFormData::class,
+        ]);
+
         // Tenant context must be set before route-model binding, or scoped
         // models (members, plans, etc.) resolve as missing and return 404.
         $middleware->prependToPriorityList(

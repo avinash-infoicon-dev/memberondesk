@@ -190,7 +190,7 @@ class MemberApiTest extends TestCase
             ->assertJsonPath('success', false);
     }
 
-    public function test_owner_can_update_member_via_multipart_post(): void
+    public function test_owner_can_update_member_via_multipart_post_without_phone(): void
     {
         Storage::fake('public');
 
@@ -206,7 +206,8 @@ class MemberApiTest extends TestCase
 
         Sanctum::actingAs($owner);
 
-        // PHP does not parse multipart on PUT — clients must POST (same as /profile).
+        // Prefer POST for multipart; PUT also works via ParseMultipartFormData middleware.
+        // Phone is optional (device-local privacy mode).
         $this->post('/api/v1/members/'.$member->id, [
             'name' => 'Updated Name',
             'email' => 'updated@example.com',

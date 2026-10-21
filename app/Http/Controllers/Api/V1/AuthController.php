@@ -71,6 +71,8 @@ class AuthController extends Controller
                 'type' => $user->business->type,
                 'status' => $user->business->status,
                 'upi_id' => $user->business->upi_id,
+                'member_phone_storage' => $user->business->member_phone_storage?->value
+                    ?? \App\Enums\MemberPhoneStorage::DeviceLocal->value,
             ] : null,
         ], 'Logged in successfully');
     }
@@ -93,7 +95,15 @@ class AuthController extends Controller
                 $user->only(['id', 'name', 'email', 'phone', 'role', 'business_id', 'profile_image_url']),
                 ['type' => $businessType],
             ),
-            'business' => $user->business?->only(['id', 'name', 'type', 'status', 'upi_id']),
+            'business' => $user->business ? [
+                'id' => $user->business->id,
+                'name' => $user->business->name,
+                'type' => $user->business->type,
+                'status' => $user->business->status,
+                'upi_id' => $user->business->upi_id,
+                'member_phone_storage' => $user->business->member_phone_storage?->value
+                    ?? \App\Enums\MemberPhoneStorage::DeviceLocal->value,
+            ] : null,
         ], 'Data fetched successfully');
     }
 }

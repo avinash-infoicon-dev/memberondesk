@@ -53,7 +53,7 @@ class MemberController extends Controller
 
     public function store(StoreMemberRequest $request): JsonResponse
     {
-        $data = $request->safe()->except(['profile_image']);
+        $data = $request->safe()->except(['profile_image', 'profileImage']);
         $data = $this->applyProfileImage($request->file('profile_image'), $data, $request->user()->business_id);
 
         $member = $this->members->create($data)->load('activeQrCode');
@@ -76,7 +76,7 @@ class MemberController extends Controller
 
     public function update(UpdateMemberRequest $request, Member $member): JsonResponse
     {
-        $data = $request->safe()->except(['profile_image']);
+        $data = $request->safe()->except(['profile_image', 'profileImage']);
         $oldPhoto = $member->photo_path;
         $data = $this->applyProfileImage(
             $request->file('profile_image'),

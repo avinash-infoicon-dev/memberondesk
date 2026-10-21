@@ -11,6 +11,7 @@
             <p><strong>Status:</strong> <span class="badge {{ status_badge_class($business->status->color()) }}">{{ $business->status->label() }}</span></p>
             <p><strong>Owner:</strong> {{ $business->owner?->name }} ({{ $business->owner?->email }})</p>
             <p><strong>Phone:</strong> {{ $business->phone ?: '—' }}</p>
+            <p><strong>Member mobile:</strong> {{ $business->member_phone_storage?->label() ?? '—' }}</p>
             <p><strong>UPI:</strong> {{ $business->upi_id ?: '—' }}</p>
             <p><strong>Address:</strong> {{ $business->address ?: '—' }}</p>
         </div></div>

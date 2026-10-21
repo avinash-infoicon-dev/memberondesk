@@ -22,6 +22,8 @@ class Member extends Model
         'name',
         'email',
         'phone',
+        'phone_ciphertext',
+        'phone_wrapped_key',
         'gender',
         'date_of_birth',
         'address',

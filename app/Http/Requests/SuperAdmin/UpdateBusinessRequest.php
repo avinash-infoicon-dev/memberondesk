@@ -4,6 +4,7 @@ namespace App\Http\Requests\SuperAdmin;
 
 use App\Enums\BusinessStatus;
 use App\Enums\BusinessType;
+use App\Enums\MemberPhoneStorage;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -27,6 +28,7 @@ class UpdateBusinessRequest extends FormRequest
             'state' => ['nullable', 'string', 'max:100'],
             'pincode' => ['nullable', 'string', 'max:12'],
             'status' => ['required', Rule::enum(BusinessStatus::class)],
+            'member_phone_storage' => ['required', Rule::enum(MemberPhoneStorage::class)],
             'whatsapp_enabled' => ['sometimes', 'boolean'],
         ];
     }
