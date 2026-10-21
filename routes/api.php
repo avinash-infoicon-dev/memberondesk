@@ -25,6 +25,9 @@ Route::prefix('v1')->group(function () {
             Route::post('/profile', [ProfileController::class, 'update']);
             Route::put('/profile', [ProfileController::class, 'update']);
             Route::patch('/profile', [ProfileController::class, 'update']);
+            // Multipart body is not parsed by PHP on PUT/PATCH — allow POST for image updates
+            // (same pattern as /profile). Android/Retrofit should POST multipart here.
+            Route::post('members/{member}', [MemberController::class, 'update']);
             Route::apiResource('members', MemberController::class);
             Route::apiResource('plans', PlanController::class)->only(['index', 'store', 'show', 'destroy', 'update']);
             Route::apiResource('subscriptions', SubscriptionController::class)->only(['index', 'store', 'show']);

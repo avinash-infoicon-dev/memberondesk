@@ -13,6 +13,14 @@ class UpdateMemberRequest extends FormRequest
         return $this->user()?->can('update', $this->route('member')) ?? false;
     }
 
+    protected function prepareForValidation(): void
+    {
+        // Retrofit often sends camelCase for the file part.
+        if ($this->hasFile('profileImage') && ! $this->hasFile('profile_image')) {
+            $this->files->set('profile_image', $this->file('profileImage'));
+        }
+    }
+
     public function rules(): array
     {
         $businessId = $this->user()?->business_id;
@@ -21,7 +29,7 @@ class UpdateMemberRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:20', Rule::unique('members', 'phone')->where('business_id', $businessId)->ignore($member)],
+            'phone' => ['required', 'string', 'max:20', Rule::unique('members', 'phone')->where('business_id', $businessId)->ignore($member)],
             'gender' => ['nullable', 'in:male,female,other'],
             'date_of_birth' => ['nullable', 'date'],
             'address' => ['nullable', 'string', 'max:255'],

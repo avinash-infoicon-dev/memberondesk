@@ -14,6 +14,8 @@ use App\Models\User;
 use App\Services\SubscriptionService;
 use App\Support\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -186,6 +188,40 @@ class MemberApiTest extends TestCase
         $this->getJson('/api/v1/members/'.$member->id)
             ->assertNotFound()
             ->assertJsonPath('success', false);
+    }
+
+    public function test_owner_can_update_member_via_multipart_post(): void
+    {
+        Storage::fake('public');
+
+        $owner = $this->gymOwner();
+        $member = Member::query()->create([
+            'business_id' => $owner->business_id,
+            'member_code' => 'M260008',
+            'name' => 'Old Name',
+            'phone' => '9444444444',
+            'status' => MemberStatus::Active,
+            'joined_at' => now(),
+        ]);
+
+        Sanctum::actingAs($owner);
+
+        // PHP does not parse multipart on PUT — clients must POST (same as /profile).
+        $this->post('/api/v1/members/'.$member->id, [
+            'name' => 'Updated Name',
+            'email' => 'updated@example.com',
+            'phone' => '9444444444',
+            'address' => 'Pune',
+            'status' => MemberStatus::Active->value,
+            'profileImage' => UploadedFile::fake()->image('member.jpg'),
+        ], ['Accept' => 'application/json'])
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.name', 'Updated Name')
+            ->assertJsonPath('data.email', 'updated@example.com');
+
+        $this->assertNotNull($member->fresh()->photo_path);
+        Storage::disk('public')->assertExists($member->fresh()->photo_path);
     }
 
     private function gymOwner(): User
