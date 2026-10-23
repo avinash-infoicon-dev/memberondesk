@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\V1\AttendanceController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\DashboardController;
+use App\Http\Controllers\Api\V1\EncryptionKeyController;
 use App\Http\Controllers\Api\V1\MemberController;
 use App\Http\Controllers\Api\V1\PaymentController;
 use App\Http\Controllers\Api\V1\PaymentRequestController;
@@ -19,6 +20,8 @@ Route::prefix('v1')->group(function () {
     Route::middleware(['auth:sanctum', 'active.user', 'tenant'])->group(function () {
         Route::post('/auth/logout', [AuthController::class, 'logout']);
         Route::get('/auth/me', [AuthController::class, 'me']);
+        Route::post('/encryption-key', [EncryptionKeyController::class, 'store']);
+        Route::get('/encryption-key', [EncryptionKeyController::class, 'show']);
 
         Route::middleware('business_owner')->group(function () {
             Route::get('dashboard', DashboardController::class);

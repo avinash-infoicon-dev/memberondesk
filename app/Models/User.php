@@ -22,6 +22,7 @@ class User extends Authenticatable
         'email',
         'phone',
         'password',
+        'encrypted_key',
         'role',
         'business_id',
         'is_active',
@@ -32,6 +33,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'encrypted_key',
     ];
 
     protected function casts(): array
