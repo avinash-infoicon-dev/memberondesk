@@ -33,7 +33,7 @@ class StoreMemberRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255'],
             // Optional: device-local mode keeps phone only on Android.
-            'phone' => ['nullable', 'string', 'max:20', Rule::unique('members', 'phone')->where('business_id', $businessId)],
+            'phone' => ['nullable', 'string', 'max:20000', Rule::unique('members', 'phone')->where('business_id', $businessId)],
             'phone_ciphertext' => ['nullable', 'string'],
             'phone_wrapped_key' => ['nullable', 'string', 'required_with:phone_ciphertext'],
             'gender' => ['nullable', 'in:male,female,other'],
