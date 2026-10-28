@@ -29,6 +29,8 @@ class MemberResource extends JsonResource
             'status_label' => $status->label(),
             'account_status' => $this->status,
             'joined_at' => $this->joined_at?->toDateString(),
+            'whatsapp_welcome_message' => $this->whatsapp_welcome_message,
+            'whatsapp_welcome_sent' => $this->whatsapp_welcome_sent_at !== null,
             'qr_token' => $this->whenLoaded('activeQrCode', fn () => $this->activeQrCode?->token),
             'current_plan_name' => $this->when(
                 $this->subscriptionRelationsLoaded(),

@@ -33,6 +33,8 @@ class Member extends Model
         'status',
         'joined_at',
         'notes',
+        'whatsapp_welcome_message',
+        'whatsapp_welcome_sent_at',
     ];
 
     protected function casts(): array
@@ -41,6 +43,7 @@ class Member extends Model
             'status' => MemberStatus::class,
             'date_of_birth' => 'date',
             'joined_at' => 'date',
+            'whatsapp_welcome_sent_at' => 'datetime',
         ];
     }
 

@@ -71,6 +71,8 @@ class AuthController extends Controller
                 'type' => $user->business->type,
                 'status' => $user->business->status,
                 'upi_id' => $user->business->upi_id,
+                'account_holder_name' => $user->business->account_holder_name,
+                'upi_qr_url' => $user->business->upi_qr_url,
                 'member_phone_storage' => $user->business->member_phone_storage?->value
                     ?? \App\Enums\MemberPhoneStorage::DeviceLocal->value,
             ] : null,
@@ -101,6 +103,8 @@ class AuthController extends Controller
                 'type' => $user->business->type,
                 'status' => $user->business->status,
                 'upi_id' => $user->business->upi_id,
+                'account_holder_name' => $user->business->account_holder_name,
+                'upi_qr_url' => $user->business->upi_qr_url,
                 'member_phone_storage' => $user->business->member_phone_storage?->value
                     ?? \App\Enums\MemberPhoneStorage::DeviceLocal->value,
             ] : null,

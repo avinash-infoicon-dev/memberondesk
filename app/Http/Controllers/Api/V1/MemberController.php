@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Enums\MembershipDisplayStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\UpdateWhatsappWelcomeRequest;
 use App\Http\Requests\Business\StoreMemberRequest;
 use App\Http\Requests\Business\UpdateMemberRequest;
 use App\Http\Resources\Api\V1\MemberResource;
@@ -103,6 +104,21 @@ class MemberController extends Controller
         return ApiResponse::success(
             new MemberResource($member),
             'Member updated successfully'
+        );
+    }
+
+    public function updateWhatsappWelcome(UpdateWhatsappWelcomeRequest $request, Member $member): JsonResponse
+    {
+        $sent = $request->boolean('sent');
+
+        $member->update([
+            'whatsapp_welcome_message' => $request->string('message')->toString(),
+            'whatsapp_welcome_sent_at' => $sent ? ($member->whatsapp_welcome_sent_at ?? now()) : null,
+        ]);
+
+        return ApiResponse::success(
+            new MemberResource($member->fresh()),
+            'WhatsApp welcome updated'
         );
     }
 

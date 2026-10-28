@@ -225,6 +225,39 @@ class MemberApiTest extends TestCase
         Storage::disk('public')->assertExists($member->fresh()->photo_path);
     }
 
+    public function test_member_profile_tracks_the_first_whatsapp_welcome_only(): void
+    {
+        $owner = $this->gymOwner();
+        $member = Member::query()->create([
+            'business_id' => $owner->business_id,
+            'member_code' => 'M260009',
+            'name' => 'Asha Kale',
+            'phone' => '9333333333',
+            'status' => MemberStatus::Active,
+            'joined_at' => now(),
+        ]);
+
+        Sanctum::actingAs($owner);
+
+        $this->getJson('/api/v1/members/'.$member->id)
+            ->assertOk()
+            ->assertJsonPath('data.whatsapp_welcome_sent', false)
+            ->assertJsonPath('data.whatsapp_welcome_message', null);
+
+        $this->postJson('/api/v1/members/'.$member->id.'/whatsapp-welcome', [
+            'message' => 'Welcome to the gym, Asha.',
+        ])->assertOk()
+            ->assertJsonPath('data.whatsapp_welcome_sent', true)
+            ->assertJsonPath('data.whatsapp_welcome_message', 'Welcome to the gym, Asha.');
+
+        $this->assertNotNull($member->fresh()->whatsapp_welcome_sent_at);
+
+        $this->getJson('/api/v1/members/'.$member->id)
+            ->assertOk()
+            ->assertJsonPath('data.whatsapp_welcome_sent', true)
+            ->assertJsonPath('data.whatsapp_welcome_message', 'Welcome to the gym, Asha.');
+    }
+
     private function gymOwner(): User
     {
         return $this->ownerWithBusiness(BusinessType::Gym);

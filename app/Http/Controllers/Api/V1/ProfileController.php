@@ -75,7 +75,7 @@ class ProfileController extends Controller
         return ApiResponse::success([
             'user' => $user->only(['id', 'name', 'email', 'phone', 'role', 'business_id', 'profile_image_url']),
             'business' => $user->business?->only([
-                'id', 'name', 'type', 'status', 'email', 'phone', 'upi_id', 'address', 'city', 'state', 'pincode', 'whatsapp_enabled',
+                'id', 'name', 'type', 'status', 'email', 'phone', 'upi_id', 'account_holder_name', 'upi_qr_url', 'address', 'city', 'state', 'pincode', 'whatsapp_enabled',
             ]),
         ], 'Profile updated successfully');
     }

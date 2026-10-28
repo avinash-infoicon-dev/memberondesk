@@ -98,6 +98,31 @@ class ProfileApiTest extends TestCase
         $this->assertSame([], Storage::disk('public')->allFiles());
     }
 
+    public function test_owner_can_upload_upi_qr_and_account_holder_name(): void
+    {
+        Storage::fake('public');
+        $owner = $this->gymOwner();
+        Sanctum::actingAs($owner);
+
+        $this->post('/api/v1/upi', [
+            'account_holder_name' => 'Rahul Sharma',
+            'upi_qr' => UploadedFile::fake()->image('upi-qr.png'),
+        ], ['Accept' => 'application/json'])
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.account_holder_name', 'Rahul Sharma')
+            ->assertJsonPath('data.upi_qr_url', fn ($url) => is_string($url) && $url !== '');
+
+        $business = $owner->fresh()->business;
+        $this->assertSame('Rahul Sharma', $business->account_holder_name);
+        Storage::disk('public')->assertExists($business->upi_qr_path);
+
+        $this->getJson('/api/v1/auth/me')
+            ->assertOk()
+            ->assertJsonPath('data.business.account_holder_name', 'Rahul Sharma')
+            ->assertJsonPath('data.business.upi_qr_url', $business->upi_qr_url);
+    }
+
     private function gymOwner(): User
     {
         return $this->ownerWithBusiness(BusinessType::Gym);

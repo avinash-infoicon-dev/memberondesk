@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\V1\PaymentRequestController;
 use App\Http\Controllers\Api\V1\PlanController;
 use App\Http\Controllers\Api\V1\ProfileController;
 use App\Http\Controllers\Api\V1\SubscriptionController;
+use App\Http\Controllers\Api\V1\UpiController;
 use App\Http\Controllers\Api\V1\WebhookController;
 use Illuminate\Support\Facades\Route;
 
@@ -25,11 +26,13 @@ Route::prefix('v1')->group(function () {
 
         Route::middleware('business_owner')->group(function () {
             Route::get('dashboard', DashboardController::class);
+            Route::post('/upi', [UpiController::class, 'store']);
             Route::post('/profile', [ProfileController::class, 'update']);
             Route::put('/profile', [ProfileController::class, 'update']);
             Route::patch('/profile', [ProfileController::class, 'update']);
             // Multipart body is not parsed by PHP on PUT/PATCH — allow POST for image updates
             // (same pattern as /profile). Android/Retrofit should POST multipart here.
+            Route::post('members/{member}/whatsapp-welcome', [MemberController::class, 'updateWhatsappWelcome']);
             Route::post('members/{member}', [MemberController::class, 'update']);
             Route::apiResource('members', MemberController::class);
             Route::apiResource('plans', PlanController::class)->only(['index', 'store', 'show', 'destroy', 'update']);

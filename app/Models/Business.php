@@ -25,6 +25,8 @@ class Business extends Model
         'email',
         'phone',
         'upi_id',
+        'account_holder_name',
+        'upi_qr_path',
         'address',
         'city',
         'state',
@@ -49,6 +51,23 @@ class Business extends Model
             'settings' => 'array',
             'activated_at' => 'datetime',
             'suspended_at' => 'datetime',
+        ];
+    }
+
+    public function getUpiQrUrlAttribute(): ?string
+    {
+        return public_storage_url($this->upi_qr_path);
+    }
+
+    /**
+     * @return array{account_holder_name: ?string, upi_id: ?string, upi_qr_url: ?string}
+     */
+    public function upiDetails(): array
+    {
+        return [
+            'account_holder_name' => $this->account_holder_name,
+            'upi_id' => $this->upi_id,
+            'upi_qr_url' => $this->upi_qr_url,
         ];
     }
 
