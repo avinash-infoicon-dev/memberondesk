@@ -2,16 +2,14 @@
 
 namespace App\Services;
 
-use App\Enums\MemberStatus;
+use App\Enums\MembershipDisplayStatus;
 use App\Enums\NotificationStatus;
 use App\Enums\PaymentStatus;
-use App\Enums\SubscriptionStatus;
 use App\Models\AppSetting;
 use App\Models\Attendance;
 use App\Models\Member;
 use App\Models\NotificationLog;
 use App\Models\Payment;
-use App\Models\Subscription;
 use App\Models\User;
 
 class DashboardService
@@ -54,19 +52,13 @@ class DashboardService
                 'formatted_collection' => $this->formatMoney($monthCollection),
             ],
             'stats' => [
-                'active_members' => Member::query()
-                    ->where('status', MemberStatus::Active)
-                    ->whereHas('subscriptions', fn ($query) => $query->active())
-                    ->count(),
+                'active_members' => $this->membersIn(MembershipDisplayStatus::Active),
                 'present_today' => $todayAttendanceCount,
                 'total_members' => Member::query()->count(),
                 'today_attendance' => $todayAttendanceCount,
-                'expiring_soon' => Subscription::query()->expiring(7)->count(),
-                'expired_overdue' => Subscription::query()->expired()->count(),
-                'payment_due' => Subscription::query()
-                    ->whereIn('status', [SubscriptionStatus::Pending, SubscriptionStatus::Active])
-                    ->whereColumn('paid_amount', '<', 'amount')
-                    ->count(),
+                'expiring_soon' => $this->membersIn(MembershipDisplayStatus::ExpiringSoon),
+                'expired_overdue' => $this->membersIn(MembershipDisplayStatus::Expired),
+                'payment_due' => $this->membersIn(MembershipDisplayStatus::PaymentPending),
             ],
             'expiring_members' => $this->expiringMembers(),
             'today_attendance' => $this->todayAttendance(),
@@ -74,19 +66,24 @@ class DashboardService
         ];
     }
 
+    private function membersIn(MembershipDisplayStatus $status): int
+    {
+        return Member::query()->displayStatus($status)->count();
+    }
+
     private function expiringMembers(): array
     {
-        return Subscription::query()
-            ->with(['member', 'plan'])
-            ->expiring(7)
-            ->orderBy('ends_at')
-            ->limit(10)
+        return Member::query()
+            ->with(['activeSubscription.plan'])
+            ->displayStatus(MembershipDisplayStatus::ExpiringSoon)
             ->get()
-            ->map(function (Subscription $subscription) {
-                $member = $subscription->member;
-                $plan = $subscription->plan;
-                $amountDue = $subscription->balance();
-                $daysRemaining = (int) now()->startOfDay()->diffInDays($subscription->ends_at?->startOfDay() ?? now(), false);
+            ->sortBy(fn (Member $member) => $member->activeSubscription?->ends_at?->timestamp ?? PHP_INT_MAX)
+            ->take(10)
+            ->map(function (Member $member) {
+                $subscription = $member->activeSubscription;
+                $plan = $subscription?->plan;
+                $amountDue = $subscription?->balance() ?? 0;
+                $daysRemaining = (int) now()->startOfDay()->diffInDays($subscription?->ends_at?->startOfDay() ?? now(), false);
 
                 return [
                     'member_id' => $member?->id,
@@ -101,7 +98,7 @@ class DashboardService
                         'price' => (float) ($plan?->price ?? 0),
                     ],
                     'membership_status' => 'expiring_soon',
-                    'expiry_date' => $subscription->ends_at?->toDateString(),
+                    'expiry_date' => $subscription?->ends_at?->toDateString(),
                     'days_remaining' => max(0, $daysRemaining),
                     'amount_due' => $amountDue,
                     'currency' => 'INR',

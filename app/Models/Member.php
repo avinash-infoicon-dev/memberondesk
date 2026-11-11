@@ -177,27 +177,29 @@ class Member extends Model
                     });
             }),
             MembershipDisplayStatus::PaymentPending => $query->where('status', MemberStatus::Active)
-                ->whereHas('subscriptions', function (Builder $subscriptions) {
-                    $subscriptions->whereColumn('paid_amount', '<', 'amount')
-                        ->where(function (Builder $row) {
-                            $row->active()->orWhere('status', SubscriptionStatus::Pending);
-                        });
+                ->where(function (Builder $builder) {
+                    $builder->whereHas('subscriptions', function (Builder $subscriptions) {
+                        $this->constrainLatestCurrentSubscription($subscriptions)
+                            ->whereColumn('paid_amount', '<', 'amount');
+                    })->orWhere(function (Builder $inner) {
+                        $inner->whereDoesntHave('subscriptions', fn (Builder $subscriptions) => $subscriptions->active())
+                            ->whereHas('subscriptions', function (Builder $subscriptions) {
+                                $subscriptions->where('status', SubscriptionStatus::Pending)
+                                    ->whereColumn('paid_amount', '<', 'amount');
+                            });
+                    });
                 }),
             MembershipDisplayStatus::ExpiringSoon => $query->where('status', MemberStatus::Active)
                 ->whereHas('subscriptions', function (Builder $subscriptions) {
-                    $subscriptions->expiring(7)->whereColumn('paid_amount', '>=', 'amount');
-                })
-                ->whereDoesntHave('subscriptions', function (Builder $subscriptions) {
-                    $subscriptions->whereColumn('paid_amount', '<', 'amount')
-                        ->where(function (Builder $row) {
-                            $row->active()->orWhere('status', SubscriptionStatus::Pending);
-                        });
+                    $this->constrainLatestCurrentSubscription($subscriptions)
+                        ->whereColumn('paid_amount', '>=', 'amount')
+                        ->whereDate('ends_at', '<=', now()->addDays(7));
                 }),
             MembershipDisplayStatus::Active => $query->where('status', MemberStatus::Active)
                 ->whereHas('subscriptions', function (Builder $subscriptions) {
-                    $subscriptions->active()
-                        ->whereDate('ends_at', '>', now()->addDays(7))
-                        ->whereColumn('paid_amount', '>=', 'amount');
+                    $this->constrainLatestCurrentSubscription($subscriptions)
+                        ->whereColumn('paid_amount', '>=', 'amount')
+                        ->whereDate('ends_at', '>', now()->addDays(7));
                 }),
             MembershipDisplayStatus::Expired => $query->where('status', MemberStatus::Active)
                 ->whereDoesntHave('subscriptions', fn (Builder $subscriptions) => $subscriptions->active())
@@ -207,5 +209,22 @@ class Member extends Model
                 })
                 ->whereHas('subscriptions', fn (Builder $subscriptions) => $subscriptions->expired()),
         };
+    }
+
+    /**
+     * The member's current plan is the newest subscription that is active today.
+     * Dashboard counts and list filters use this so a member is in one status only.
+     */
+    private function constrainLatestCurrentSubscription(Builder $subscriptions): Builder
+    {
+        return $subscriptions->whereIn('id', function ($query) {
+            $query->selectRaw('MAX(current_subscriptions.id)')
+                ->from('subscriptions as current_subscriptions')
+                ->where('current_subscriptions.status', SubscriptionStatus::Active->value)
+                ->whereDate('current_subscriptions.starts_at', '<=', now())
+                ->whereDate('current_subscriptions.ends_at', '>=', now())
+                ->whereNull('current_subscriptions.deleted_at')
+                ->groupBy('current_subscriptions.member_id');
+        });
     }
 }
