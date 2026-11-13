@@ -124,16 +124,18 @@ class Member extends Model
             return MembershipDisplayStatus::Inactive;
         }
 
-        $active = $this->relationLoaded('activeSubscription')
-            ? $this->activeSubscription
-            : $this->activeSubscription()->first();
+        // Same row the API returns as active_subscription: the newest Active plan,
+        // including one that starts later. Status must follow that end date.
+        $active = $this->relationLoaded('latestActiveSubscription')
+            ? $this->latestActiveSubscription
+            : $this->latestActiveSubscription()->first();
 
-        if ($active) {
+        if ($active && $active->ends_at?->copy()->startOfDay()->gte(now()->startOfDay())) {
             if ($active->balance() > 0) {
                 return MembershipDisplayStatus::PaymentPending;
             }
 
-            if ($active->ends_at?->lte(now()->addDays(7)->endOfDay())) {
+            if ($active->ends_at->copy()->startOfDay()->lte(now()->addDays(7)->startOfDay())) {
                 return MembershipDisplayStatus::ExpiringSoon;
             }
 
@@ -179,10 +181,11 @@ class Member extends Model
             MembershipDisplayStatus::PaymentPending => $query->where('status', MemberStatus::Active)
                 ->where(function (Builder $builder) {
                     $builder->whereHas('subscriptions', function (Builder $subscriptions) {
-                        $this->constrainLatestCurrentSubscription($subscriptions)
+                        $this->constrainLatestAssignedActiveSubscription($subscriptions)
+                            ->whereDate('ends_at', '>=', now())
                             ->whereColumn('paid_amount', '<', 'amount');
                     })->orWhere(function (Builder $inner) {
-                        $inner->whereDoesntHave('subscriptions', fn (Builder $subscriptions) => $subscriptions->active())
+                        $inner->whereDoesntHave('subscriptions', fn (Builder $subscriptions) => $subscriptions->where('status', SubscriptionStatus::Active))
                             ->whereHas('subscriptions', function (Builder $subscriptions) {
                                 $subscriptions->where('status', SubscriptionStatus::Pending)
                                     ->whereColumn('paid_amount', '<', 'amount');
@@ -191,40 +194,46 @@ class Member extends Model
                 }),
             MembershipDisplayStatus::ExpiringSoon => $query->where('status', MemberStatus::Active)
                 ->whereHas('subscriptions', function (Builder $subscriptions) {
-                    $this->constrainLatestCurrentSubscription($subscriptions)
+                    $this->constrainLatestAssignedActiveSubscription($subscriptions)
                         ->whereColumn('paid_amount', '>=', 'amount')
+                        ->whereDate('ends_at', '>=', now())
                         ->whereDate('ends_at', '<=', now()->addDays(7));
                 }),
             MembershipDisplayStatus::Active => $query->where('status', MemberStatus::Active)
                 ->whereHas('subscriptions', function (Builder $subscriptions) {
-                    $this->constrainLatestCurrentSubscription($subscriptions)
+                    $this->constrainLatestAssignedActiveSubscription($subscriptions)
                         ->whereColumn('paid_amount', '>=', 'amount')
                         ->whereDate('ends_at', '>', now()->addDays(7));
                 }),
             MembershipDisplayStatus::Expired => $query->where('status', MemberStatus::Active)
-                ->whereDoesntHave('subscriptions', fn (Builder $subscriptions) => $subscriptions->active())
-                ->whereDoesntHave('subscriptions', function (Builder $subscriptions) {
-                    $subscriptions->where('status', SubscriptionStatus::Pending)
-                        ->whereColumn('paid_amount', '<', 'amount');
-                })
-                ->whereHas('subscriptions', fn (Builder $subscriptions) => $subscriptions->expired()),
+                ->where(function (Builder $builder) {
+                    $builder->whereHas('subscriptions', function (Builder $subscriptions) {
+                        $this->constrainLatestAssignedActiveSubscription($subscriptions)
+                            ->whereDate('ends_at', '<', now());
+                    })->orWhere(function (Builder $inner) {
+                        $inner->whereDoesntHave('subscriptions', fn (Builder $subscriptions) => $subscriptions->where('status', SubscriptionStatus::Active))
+                            ->whereDoesntHave('subscriptions', function (Builder $subscriptions) {
+                                $subscriptions->where('status', SubscriptionStatus::Pending)
+                                    ->whereColumn('paid_amount', '<', 'amount');
+                            })
+                            ->whereHas('subscriptions', fn (Builder $subscriptions) => $subscriptions->expired());
+                    });
+                }),
         };
     }
 
     /**
-     * The member's current plan is the newest subscription that is active today.
-     * Dashboard counts and list filters use this so a member is in one status only.
+     * Newest subscription with status Active, including a renewal that starts later.
+     * This is the plan whose end date the members API shows.
      */
-    private function constrainLatestCurrentSubscription(Builder $subscriptions): Builder
+    private function constrainLatestAssignedActiveSubscription(Builder $subscriptions): Builder
     {
         return $subscriptions->whereIn('id', function ($query) {
-            $query->selectRaw('MAX(current_subscriptions.id)')
-                ->from('subscriptions as current_subscriptions')
-                ->where('current_subscriptions.status', SubscriptionStatus::Active->value)
-                ->whereDate('current_subscriptions.starts_at', '<=', now())
-                ->whereDate('current_subscriptions.ends_at', '>=', now())
-                ->whereNull('current_subscriptions.deleted_at')
-                ->groupBy('current_subscriptions.member_id');
+            $query->selectRaw('MAX(latest_active.id)')
+                ->from('subscriptions as latest_active')
+                ->where('latest_active.status', SubscriptionStatus::Active->value)
+                ->whereNull('latest_active.deleted_at')
+                ->groupBy('latest_active.member_id');
         });
     }
 }

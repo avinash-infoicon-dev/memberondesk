@@ -171,6 +171,56 @@ class MemberApiTest extends TestCase
             ->assertJsonPath('data.last_active_subscription.id', $previous->id);
     }
 
+    public function test_future_plan_ending_in_2027_is_not_expiring_soon(): void
+    {
+        $owner = $this->gymOwner();
+        app(TenantContext::class)->set($owner->business_id);
+
+        $member = Member::query()->create([
+            'business_id' => $owner->business_id,
+            'member_code' => 'M260010',
+            'name' => 'Kiran Joshi',
+            'phone' => '9222222222',
+            'status' => MemberStatus::Active,
+            'joined_at' => now()->subDays(20),
+        ]);
+        $plan = MembershipPlan::query()->create([
+            'business_id' => $owner->business_id,
+            'name' => 'Annual',
+            'duration_days' => 365,
+            'price' => 9999,
+            'is_active' => true,
+        ]);
+
+        $current = app(SubscriptionService::class)->assign($member, $plan, [
+            'activate' => true,
+            'starts_at' => now()->subDays(25)->toDateString(),
+            'ends_at' => now()->addDays(3)->toDateString(),
+            'amount' => 9999,
+        ]);
+        $current->update(['paid_amount' => 9999]);
+
+        $renewal = app(SubscriptionService::class)->assign($member, $plan, [
+            'activate' => true,
+            'starts_at' => now()->addDays(4)->toDateString(),
+            'ends_at' => '2027-02-27',
+            'amount' => 9999,
+        ]);
+        $renewal->update(['paid_amount' => 9999]);
+
+        Sanctum::actingAs($owner);
+
+        $this->getJson('/api/v1/members/'.$member->id)
+            ->assertOk()
+            ->assertJsonPath('data.status', 'active')
+            ->assertJsonPath('data.active_subscription.id', $renewal->id)
+            ->assertJsonPath('data.active_subscription.ends_at', '2027-02-27');
+
+        $this->getJson('/api/v1/members?status=expiring_soon')
+            ->assertOk()
+            ->assertJsonMissing(['id' => $member->id]);
+    }
+
     public function test_library_owner_cannot_view_a_gym_member(): void
     {
         $gymOwner = $this->gymOwner();

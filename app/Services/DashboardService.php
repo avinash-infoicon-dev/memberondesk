@@ -74,13 +74,13 @@ class DashboardService
     private function expiringMembers(): array
     {
         return Member::query()
-            ->with(['activeSubscription.plan'])
+            ->with(['latestActiveSubscription.plan'])
             ->displayStatus(MembershipDisplayStatus::ExpiringSoon)
             ->get()
-            ->sortBy(fn (Member $member) => $member->activeSubscription?->ends_at?->timestamp ?? PHP_INT_MAX)
+            ->sortBy(fn (Member $member) => $member->latestActiveSubscription?->ends_at?->timestamp ?? PHP_INT_MAX)
             ->take(10)
             ->map(function (Member $member) {
-                $subscription = $member->activeSubscription;
+                $subscription = $member->latestActiveSubscription;
                 $plan = $subscription?->plan;
                 $amountDue = $subscription?->balance() ?? 0;
                 $daysRemaining = (int) now()->startOfDay()->diffInDays($subscription?->ends_at?->startOfDay() ?? now(), false);
