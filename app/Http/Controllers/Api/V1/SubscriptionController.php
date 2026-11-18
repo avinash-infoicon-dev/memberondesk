@@ -39,11 +39,19 @@ class SubscriptionController extends Controller
         $subscription = $this->subscriptions->assign(
             $member,
             $request->plan(),
-            $request->safe()->except(['member_id', 'membership_plan_id', 'collect_cash'])
+            $request->safe()->only(['starts_at', 'notes'])
         );
 
-        if ($request->boolean('collect_cash')) {
-            $this->payments->recordCash($member, (float) $subscription->amount, $subscription, $request->user());
+        if ($method = $request->paymentMethod()) {
+            $this->payments->recordManual(
+                $member,
+                $request->filled('amount') ? (float) $request->input('amount') : (float) $subscription->amount,
+                $method,
+                $subscription,
+                $request->user(),
+                $request->input('payment_notes'),
+                $request->input('reference'),
+            );
             $subscription->refresh();
         }
 

@@ -46,7 +46,7 @@ class SubscriptionController extends Controller
     public function store(StoreSubscriptionRequest $request): RedirectResponse
     {
         $member = Member::query()->findOrFail($request->integer('member_id'));
-        $subscription = $this->subscriptions->assign($member, $request->plan(), $request->safe()->except(['member_id', 'membership_plan_id', 'collect_cash']));
+        $subscription = $this->subscriptions->assign($member, $request->plan(), $request->safe()->only(['starts_at', 'notes']));
 
         if ($request->boolean('collect_cash')) {
             $this->payments->recordCash($member, (float) $subscription->amount, $subscription, $request->user(), 'Collected on assignment');

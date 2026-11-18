@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Business;
 
+use App\Enums\PaymentMethod;
 use App\Models\MembershipPlan;
 use App\Models\Subscription;
 use Illuminate\Foundation\Http\FormRequest;
@@ -22,7 +23,24 @@ class StoreSubscriptionRequest extends FormRequest
             'starts_at' => ['nullable', 'date'],
             'notes' => ['nullable', 'string'],
             'collect_cash' => ['sometimes', 'boolean'],
+            'amount' => ['sometimes', 'nullable', 'numeric', 'min:0.01'],
+            'method' => ['sometimes', 'nullable', Rule::enum(PaymentMethod::class)],
+            'reference' => ['nullable', 'string', 'max:255'],
+            'payment_notes' => ['nullable', 'string'],
         ];
+    }
+
+    public function paymentMethod(): ?PaymentMethod
+    {
+        if ($this->filled('method')) {
+            return $this->enum('method', PaymentMethod::class);
+        }
+
+        if ($this->boolean('collect_cash')) {
+            return PaymentMethod::Cash;
+        }
+
+        return null;
     }
 
     public function plan(): MembershipPlan

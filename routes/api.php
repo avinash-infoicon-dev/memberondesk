@@ -39,7 +39,7 @@ Route::prefix('v1')->group(function () {
             Route::apiResource('subscriptions', SubscriptionController::class)->only(['index', 'store', 'show']);
             Route::get('attendance', [AttendanceController::class, 'index']);
             Route::post('attendance', [AttendanceController::class, 'store']);
-            Route::apiResource('payments', PaymentController::class)->only(['index', 'store']);
+            Route::get('payments', [PaymentController::class, 'index']);
             Route::apiResource('payment-requests', PaymentRequestController::class)->only(['index', 'store', 'show']);
         });
     });
