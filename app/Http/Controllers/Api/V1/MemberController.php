@@ -47,7 +47,8 @@ class MemberController extends Controller
             })
             ->when($request->filled('status'), fn ($query) => $query->displayStatus($request->string('status')->toString()))
             ->latest()
-            ->paginate(20);
+            #->paginate(20);
+            ->get();
 
         return ApiResponse::success(MemberResource::collection($members), 'Data fetched successfully');
     }
